@@ -1,6 +1,5 @@
 import streamlit as st
 
-
 #=========설문조사===========
 # 페이지 번호 초기화
 if "page" not in st.session_state:
@@ -13,6 +12,7 @@ if "responses" not in st.session_state:
 # 페이지 전환 함수
 def next_page():
     st.session_state.page += 1
+    st.rerun()  # rerun 해서 즉시 반영되도록
 
 # 질문 목록
 questions = [
@@ -60,7 +60,7 @@ if st.session_state.page < len(questions):
         response = st.radio("선택하세요", q["options"], key=q["key"])
 
     if st.button("다음"):
-        st.session_state.responses[q["key"]] = response
+        st.session_state.responses[q["key"]] = st.session_state[q["key"]]
         next_page()
 
 else:
