@@ -2,7 +2,6 @@
 
 import streamlit as st
 
-# ✅ set_page_config는 반드시 첫 줄!
 st.set_page_config(page_title="AI 도구 추천", page_icon="🌟")
 
 import os
@@ -12,7 +11,7 @@ from langchain.chains import RetrievalQA
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.llms import OpenAI
-from langchain.document_loaders import TextLoader  # ✅ 텍스트 파일 로더로 변경
+from langchain.document_loaders import TextLoader  
 
 #========== 환경 변수 로딩 ==========
 load_dotenv()
@@ -39,7 +38,7 @@ responses = st.session_state.responses
 st.markdown("### 📖 tools.txt 로드 중...")
 
 try:
-    loader = TextLoader("tools.txt", encoding="utf-8")  # ✅ 텍스트 문서 로더
+    loader = TextLoader("tools.txt", encoding="utf-8") 
     pages = loader.load_and_split()
 except FileNotFoundError:
     st.error("❌ tools.txt 파일이 현재 폴더에 없습니다. 확인 후 다시 실행해주세요.")
