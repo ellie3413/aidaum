@@ -1,18 +1,15 @@
+# survey.py
+
 import streamlit as st
 
-#========== Streamlit 설정 ==========
-st.set_page_config(
-    page_title="AI 리터러시 설문조사",
-    page_icon="🧠",
-    layout="centered"
-)
-
 #========== 상태 초기화 ==========
-if "page" not in st.session_state:
-    st.session_state.page = 0
-
-if "responses" not in st.session_state:
-    st.session_state.responses = {}
+def init_state():
+    if "page" not in st.session_state:
+        st.session_state.page = 0
+    if "responses" not in st.session_state:
+        st.session_state.responses = {}
+    if "survey_complete" not in st.session_state:
+        st.session_state.survey_complete = False
 
 #========== 페이지 전환 함수 ==========
 def next_page():
@@ -22,6 +19,7 @@ def next_page():
 def reset_survey():
     st.session_state.page = 0
     st.session_state.responses = {}
+    st.session_state.survey_complete = False
     st.rerun()
 
 #========== 질문 목록 ==========
@@ -59,33 +57,33 @@ questions = [
     }
 ]
 
-#========== 설문 화면 ==========
-total_q = len(questions)
-curr_page = st.session_state.page
+#========== 설문 실행 함수 ==========
+def run_survey():
+    init_state()
+    total_q = len(questions)
+    curr_page = st.session_state.page
 
-# 상단 제목 및 진행률
-st.markdown("### 🤖 AI 리터러시 진단 설문")
-st.progress(curr_page / total_q)
+    st.markdown("### 🤖 AI 리터러시 진단 설문")
+    st.progress(curr_page / total_q)
 
-# 현재 페이지 질문 출력
-if curr_page < total_q:
-    q = questions[curr_page]
-    st.markdown(f"#### Q{curr_page + 1}. {q['question']}")
-    st.markdown("---")
+    if curr_page < total_q:
+        q = questions[curr_page]
+        st.markdown(f"#### Q{curr_page + 1}. {q['question']}")
+        st.markdown("---")
 
-    if q.get("multi"):
-        response = st.multiselect("✅ 선택하세요", q["options"], key=f"resp_{q['key']}")
+        if q.get("multi"):
+            response = st.multiselect("✅ 선택하세요", q["options"], key=f"resp_{q['key']}")
+        else:
+            response = st.radio("✅ 선택하세요", q["options"], key=f"resp_{q['key']}")
+
+        if st.button("👉 다음"):
+            st.session_state.responses[q["key"]] = response
+            next_page()
+
     else:
-        response = st.radio("✅ 선택하세요", q["options"], key=f"resp_{q['key']}")
-
-    if st.button("👉 다음"):
-        st.session_state.responses[q["key"]] = response
-        next_page()
-
-# 설문 완료
-else:
-    st.success("🎉 설문이 완료되었습니다! 감사합니다.")
-    st.markdown("#### 📊 당신의 응답 결과")
-    st.json(st.session_state.responses)
-    st.markdown("---")
-    st.button("🔄 처음부터 다시 하기", on_click=reset_survey)
+        st.success("🎉 설문이 완료되었습니다! 감사합니다.")
+        st.session_state.survey_complete = True
+        st.markdown("#### 📊 당신의 응답 결과")
+        st.json(st.session_state.responses)
+        st.markdown("---")
+        st.button("🔄 처음부터 다시 하기", on_click=reset_survey)
