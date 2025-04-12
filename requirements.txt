@@ -2,4 +2,10 @@ streamlit
 python-dotenv
 openai
 langchain
+langchain-community
+langchain-openai
 unstructured
+faiss-cpu
+matplotlib
+pandas
+tiktoken 
