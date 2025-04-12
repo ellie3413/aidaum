@@ -1,0 +1,277 @@
+[
+  {
+    "name": "ChatGPT",
+    "category": "AI Assistants (Chatbots)",
+    "difficulty": null,
+    "description": "ChatGPT is a highly popular AI assistant used for tasks ranging from brainstorming and translation to code generation and image-based chart analysis. The latest 4o model includes multimodal input and output, personalized context retention, and even Operator features for automated online actions. It’s considered extremely versatile and user-friendly."
+  },
+  {
+    "name": "Claude",
+    "category": "AI Assistants (Chatbots)",
+    "difficulty": null,
+    "description": "Claude 3.5 Sonnet by Anthropic excels in programming tasks with strong code review and debugging abilities. It offers a warm conversational style and is known for high contextual understanding, especially with modern software development frameworks."
+  },
+  {
+    "name": "Gemini",
+    "category": "AI Assistants (Chatbots)",
+    "difficulty": null,
+    "description": "Gemini is Google's AI assistant with deep integration into the Google ecosystem. It’s adept at summarizing content, creative writing, and image-based tasks. It supports both free and advanced paid plans with models tailored for complex reasoning."
+  },
+  {
+    "name": "DeepSeek",
+    "category": "AI Assistants (Chatbots)",
+    "difficulty": null,
+    "description": "DeepSeek is known for its transparency, efficiency, and cost-effectiveness. The R1 and V3 models offer comprehensive answers and coding suggestions, making it a strong open-source alternative to mainstream LLMs."
+  },
+  {
+    "name": "Grok",
+    "category": "AI Assistants (Chatbots)",
+    "difficulty": null,
+    "description": "Grok 3 is a conversational AI with access to real-time Twitter data and fewer content restrictions. While not the most consistent in technical outputs, it’s notable for its openness and unique information access features."
+  },
+  {
+    "name": "Synthesia",
+    "category": "Video Generation and Editing",
+    "difficulty": null,
+    "description": "Synthesia is an AI video generator that creates realistic human avatars from text input. Ideal for training videos, internal communications, and sales outreach, it supports over 140 languages and offers customizable avatars. While perfect for corporate content, it’s not suited for storytelling or cinematic visuals."
+  },
+  {
+    "name": "Runway",
+    "category": "Video Generation and Editing",
+    "difficulty": null,
+    "description": "Runway is a creative AI platform offering video generation from text and image inputs. Key tools include Motion Brush, Camera Controls, and Inpainting. It’s powerful for digital artists and filmmakers but may have a learning curve for new users."
+  },
+  {
+    "name": "Filmora",
+    "category": "Video Generation and Editing",
+    "difficulty": null,
+    "description": "Filmora is a beginner-friendly video editor packed with AI features like Smart Cutout, Background Removal, and Motion Tracking. It’s ideal for social media creators and YouTubers who want polished results quickly, although it may slow down with high-res files."
+  },
+  {
+    "name": "OpusClip",
+    "category": "Video Generation and Editing",
+    "difficulty": null,
+    "description": "OpusClip uses AI to automatically generate short, engaging social media clips from long-form video content. It detects highlights, resizes for platforms like TikTok, and adds captions and emojis, streamlining content creation for creators."
+  },
+  {
+    "name": "GPT-4o",
+    "category": "Image Generation",
+    "difficulty": null,
+    "description": "GPT-4o's image generation tool offers high realism and text accuracy in generated visuals. It supports character consistency and handles facial features and posters better than previous models. However, it may struggle with fantasy prompts or highly stylized scenes."
+  },
+  {
+    "name": "Midjourney",
+    "category": "Image Generation",
+    "difficulty": null
+  },
+  {
+    "name": "Fathom",
+    "category": "Notetakers and Meeting Assistants",
+    "difficulty": "easy",
+    "description": "Fathom AI Notetaker records meetings, provides accurate summaries, and searchable transcripts with timestamped answers. It’s ideal for client calls and team discussions, helping users stay engaged without manual note-taking. Free plan available with premium features starting at $19/month."
+  },
+  {
+    "name": "Nyota",
+    "category": "Notetakers and Meeting Assistants",
+    "difficulty": "medium",
+    "description": "Nyota is a meeting assistant that not only captures transcripts and summaries but integrates them into project management tools. It automates note-taking, generates action items, and helps structure meeting agendas. Suitable for collaborative teams."
+  },
+  {
+    "name": "Deep Research",
+    "category": "Research",
+    "difficulty": "hard",
+    "description": "OpenAI's Deep Research tool scans and synthesizes hundreds of sources into a comprehensive, structured report in minutes. It's excellent for legal, financial, and technical analysis, offering strong pattern recognition and summarization capabilities."
+  },
+  {
+    "name": "Rytr",
+    "category": "Writing",
+    "difficulty": "easy",
+    "description": "Rytr is a fast and efficient writing assistant best suited for short-form content like emails, product descriptions, and social media posts. It offers over 40 templates and supports 30+ languages, with a built-in plagiarism checker. Affordable and user-friendly."
+  },
+  {
+    "name": "Sudowrite",
+    "category": "Writing",
+    "difficulty": "medium",
+    "description": "Sudowrite is tailored for fiction writers. It helps generate creative content, build characters, and expand plot outlines. Features like Describe and Brainstorm are especially useful for breaking writer’s block and improving storytelling."
+  },
+  {
+    "name": "Grammarly",
+    "category": "Grammar and Writing Improvement",
+    "difficulty": null
+  },
+  {
+    "name": "Wordtune",
+    "category": "Grammar and Writing Improvement",
+    "difficulty": null
+  },
+  {
+    "name": "Perplexity",
+    "category": "Search Engines",
+    "difficulty": null
+  },
+  {
+    "name": "ChatGPT search",
+    "category": "Search Engines",
+    "difficulty": null
+  },
+  {
+    "name": "Vista Social",
+    "category": "Social Media Management",
+    "difficulty": null
+  },
+  {
+    "name": "FeedHive",
+    "category": "Social Media Management",
+    "difficulty": null
+  },
+  {
+    "name": "Canva Magic Studio",
+    "category": "Graphic Design",
+    "difficulty": null
+  },
+  {
+    "name": "Looka",
+    "category": "Graphic Design",
+    "difficulty": null
+  },
+  {
+    "name": "Bubble",
+    "category": "App Builders & Coding",
+    "difficulty": null
+  },
+  {
+    "name": "Bolt",
+    "category": "App Builders & Coding",
+    "difficulty": null
+  },
+  {
+    "name": "Lovable",
+    "category": "App Builders & Coding",
+    "difficulty": null
+  },
+  {
+    "name": "Cursor",
+    "category": "App Builders & Coding",
+    "difficulty": null
+  },
+  {
+    "name": "v0",
+    "category": "App Builders & Coding",
+    "difficulty": null
+  },
+  {
+    "name": "Asana",
+    "category": "Project Management",
+    "difficulty": null
+  },
+  {
+    "name": "‎ClickUp",
+    "category": "Project Management",
+    "difficulty": null
+  },
+  {
+    "name": "Reclaim",
+    "category": "Scheduling",
+    "difficulty": null
+  },
+  {
+    "name": "Clockwise",
+    "category": "Scheduling",
+    "difficulty": null
+  },
+  {
+    "name": "Tidio AI",
+    "category": "Customer Service",
+    "difficulty": null
+  },
+  {
+    "name": "Hiver",
+    "category": "Customer Service",
+    "difficulty": null
+  },
+  {
+    "name": "Textio",
+    "category": "Recruitment",
+    "difficulty": null
+  },
+  {
+    "name": "CVViZ",
+    "category": "Recruitment",
+    "difficulty": null
+  },
+  {
+    "name": "Notion AI Q&A",
+    "category": "Knowledge Management",
+    "difficulty": null
+  },
+  {
+    "name": "Guru",
+    "category": "Knowledge Management",
+    "difficulty": null
+  },
+  {
+    "name": "Hubspot Email Writer",
+    "category": "Email",
+    "difficulty": null
+  },
+  {
+    "name": "SaneBox",
+    "category": "Email",
+    "difficulty": null
+  },
+  {
+    "name": "Shortwave",
+    "category": "Email",
+    "difficulty": null
+  },
+  {
+    "name": "Gamma",
+    "category": "Presentations",
+    "difficulty": null
+  },
+  {
+    "name": "Presentations.ai",
+    "category": "Presentations",
+    "difficulty": null
+  },
+  {
+    "name": "Teal",
+    "category": "Resume Builders",
+    "difficulty": null
+  },
+  {
+    "name": "Kickresume",
+    "category": "Resume Builders",
+    "difficulty": null
+  },
+  {
+    "name": "ElevenLabs",
+    "category": "Voice Generation",
+    "difficulty": null
+  },
+  {
+    "name": "Murf",
+    "category": "Voice Generation",
+    "difficulty": null
+  },
+  {
+    "name": "Suno",
+    "category": "Music Generation",
+    "difficulty": null
+  },
+  {
+    "name": "Udio",
+    "category": "Music Generation",
+    "difficulty": null
+  },
+  {
+    "name": "AdCreative",
+    "category": "Marketing",
+    "difficulty": null
+  },
+  {
+    "name": "Clay",
+    "category": "Sales",
+    "difficulty": null
+  }
+]
