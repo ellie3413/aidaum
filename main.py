@@ -7,29 +7,47 @@ import json
 import matplotlib.pyplot as plt
 import os
 import re
+import time
+from datetime import datetime
 from dotenv import load_dotenv
 from survey import questions, reset_survey, run_survey
 from langchain.chains import RetrievalQA
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAI
-from langchain_community.document_loaders import TextLoader  
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.chains.question_answering import load_qa_chain
 from user_type import determine_user_type, get_user_type_description
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
 #========== 환경 변수 로딩 ==========
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
+
+# API 키 검증
 if not api_key:
     st.error("❌ OpenAI API 키가 누락되었습니다. .env 파일을 확인해주세요.")
     st.stop()
+elif api_key.startswith('"') and api_key.endswith('"'):
+    # 따옴표가 포함된 경우 제거
+    api_key = api_key.strip('"')
+    st.warning("API 키에서 따옴표를 제거했습니다.")
+
+# 특수 문자 및 비ASCII 문자 처리
+api_key = re.sub(r'[^\x00-\x7F]+', '', api_key)  # 비ASCII 문자 제거
+api_key = re.sub(r'[^\w\-\.]', '', api_key)      # 영문자, 숫자, 하이픈, 점만 유지
+    
+# API 키 정보 표시 (디버깅용)
+st.info(f"API 키: {api_key[:5]}...{api_key[-5:]} (길이: {len(api_key)})")
+
 os.environ["OPENAI_API_KEY"] = api_key
 
 # OpenAI API 키가 유효한지 간단히 테스트
 try:
     # OpenAI 객체 생성 테스트
     test_llm = OpenAI(temperature=0.1)
+    st.success("✅ OpenAI API 키가 유효합니다.")
 except Exception as e:
     st.error(f"❌ OpenAI API 키 검증 중 오류가 발생했습니다: {str(e)}")
     st.stop()
@@ -38,8 +56,22 @@ except Exception as e:
 def load_json_data():
     """JSON 파일에서 AI 도구 데이터 로드"""
     try:
+        # UTF-8로 시도(한국어로 ㄱㄱㄱ)
         with open("tools.json", "r", encoding="utf-8") as f:
             return json.load(f)
+    except UnicodeDecodeError:
+        # UTF-8로 실패한 경우 errors='ignore' 옵션으로 다시 시도
+        try:
+            with open("tools.json", "r", encoding="utf-8", errors="ignore") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            # JSON 파싱 오류 발생 시 latin-1 인코딩으로 시도
+            try:
+                with open("tools.json", "r", encoding="latin-1") as f:
+                    return json.load(f)
+            except Exception as e:
+                st.error(f"❌ JSON 파일 로드 오류: {e}")
+                return []
     except Exception as e:
         st.error(f"❌ JSON 파일 로드 오류: {e}")
         return []
@@ -114,14 +146,19 @@ def save_user_feedback(tool_name, rating, feedback_text):
     # 피드백 파일 저장
     try:
         if os.path.exists("user_feedback.json"):
-            with open("user_feedback.json", "r", encoding="utf-8") as f:
-                existing_data = json.load(f)
+            try:
+                with open("user_feedback.json", "r", encoding="utf-8") as f:
+                    existing_data = json.load(f)
+            except UnicodeDecodeError:
+                with open("user_feedback.json", "r", encoding="latin-1") as f:
+                    existing_data = json.load(f)
+            
             existing_data.append(feedback_data)
-            with open("user_feedback.json", "w", encoding="utf-8") as f:
-                json.dump(existing_data, f, ensure_ascii=False, indent=2)
+            with open("user_feedback.json", "w", encoding="utf-8", errors="ignore") as f:
+                json.dump(existing_data, f, ensure_ascii=True, indent=2)
         else:
-            with open("user_feedback.json", "w", encoding="utf-8") as f:
-                json.dump([feedback_data], f, ensure_ascii=False, indent=2)
+            with open("user_feedback.json", "w", encoding="utf-8", errors="ignore") as f:
+                json.dump([feedback_data], f, ensure_ascii=True, indent=2)
         return True
     except Exception as e:
         st.error(f"피드백 저장 중 오류 발생: {e}")
@@ -316,6 +353,99 @@ def add_korean_description(tools):
     
     return tools
 
+#========== 평가 지표 관련 함수 ==========
+def save_rag_evaluation(question, answer, user_rating, user_feedback=None, response_time=None):
+    """RAG 시스템의 답변 평가 정보 저장"""
+    evaluation_data = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "question": question,
+        "answer": answer,
+        "user_rating": user_rating,
+        "user_feedback": user_feedback,
+        "response_time": response_time,
+        "user_profile": st.session_state.responses if hasattr(st.session_state, 'responses') else {}
+    }
+    
+    # 평가 데이터 저장
+    try:
+        if os.path.exists("rag_evaluations.json"):
+            try:
+                with open("rag_evaluations.json", "r", encoding="utf-8") as f:
+                    existing_data = json.load(f)
+            except UnicodeDecodeError:
+                with open("rag_evaluations.json", "r", encoding="latin-1") as f:
+                    existing_data = json.load(f)
+                    
+            existing_data.append(evaluation_data)
+            with open("rag_evaluations.json", "w", encoding="utf-8", errors="ignore") as f:
+                json.dump(existing_data, f, ensure_ascii=True, indent=2)
+        else:
+            with open("rag_evaluations.json", "w", encoding="utf-8", errors="ignore") as f:
+                json.dump([evaluation_data], f, ensure_ascii=True, indent=2)
+        return True
+    except Exception as e:
+        st.error(f"평가 데이터 저장 중 오류 발생: {e}")
+        return False
+
+def load_rag_evaluations():
+    """저장된 RAG 평가 데이터 로드"""
+    try:
+        if os.path.exists("rag_evaluations.json"):
+            try:
+                with open("rag_evaluations.json", "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except UnicodeDecodeError:
+                # 인코딩 오류 시 latin-1으로 시도
+                with open("rag_evaluations.json", "r", encoding="latin-1") as f:
+                    return json.load(f)
+        return []
+    except Exception as e:
+        st.error(f"평가 데이터 로드 중 오류 발생: {e}")
+        return []
+
+def calculate_average_rating():
+    """평균 사용자 평가 점수 계산"""
+    evaluations = load_rag_evaluations()
+    if not evaluations:
+        return 0
+    
+    total_rating = sum(eval.get("user_rating", 0) for eval in evaluations)
+    return total_rating / len(evaluations)
+
+def calculate_average_response_time():
+    """평균 응답 시간 계산 (초 단위)"""
+    evaluations = load_rag_evaluations()
+    times = [eval.get("response_time") for eval in evaluations if eval.get("response_time")]
+    
+    if not times:
+        return 0
+    
+    return sum(times) / len(times)
+
+def visualize_ratings():
+    """평가 점수 분포 시각화"""
+    evaluations = load_rag_evaluations()
+    
+    if not evaluations:
+        return None
+    
+    ratings = [eval.get("user_rating", 0) for eval in evaluations]
+    rating_counts = {}
+    
+    for rating in range(1, 6):
+        rating_counts[rating] = ratings.count(rating)
+    
+    fig, ax = plt.subplots(figsize=(8, 4))
+    bars = ax.bar(rating_counts.keys(), rating_counts.values(), color=['#FF9999', '#FFCC99', '#FFFF99', '#CCFF99', '#99FF99'])
+    
+    plt.xlabel('평가 점수')
+    plt.ylabel('응답 수')
+    plt.title('사용자 만족도 분포')
+    plt.xticks([1, 2, 3, 4, 5])
+    plt.tight_layout()
+    
+    return fig
+
 #========== Streamlit UI ==========
 st.title("🛸 에이아이다움")
 st.write("설문조사를 완료하시면, 당신의 AI 유형과 필요한 AI 도구를 추천해드립니다.")
@@ -331,8 +461,28 @@ responses = st.session_state.responses
 
 #========== tools.txt 및 JSON 데이터 로드 ==========
 
-loader = TextLoader("tools.txt", encoding="utf-8") 
-pages = loader.load_and_split()
+# PDF 파일 로드
+with st.spinner("PDF 파일 로딩 중..."):
+    try:
+        # PDF 로더 생성
+        pdf_loader = PyPDFLoader("tools.pdf")
+        # PDF 파일에서 문서 추출
+        pages = pdf_loader.load()
+        st.success(f"✅ PDF 파일 로드 완료: {len(pages)}페이지")
+        
+        # 텍스트 분할 설정
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200,
+            length_function=len,
+        )
+        
+        # 문서 분할
+        split_docs = text_splitter.split_documents(pages)
+        st.success(f"✅ 문서 분할 완료: {len(split_docs)}개 청크")
+    except Exception as e:
+        st.error(f"❌ PDF 파일 로드 중 오류 발생: {str(e)}")
+        st.stop()
 
 # JSON 데이터 로드
 tools_data = load_json_data()
@@ -345,6 +495,33 @@ if responses.get('ai_knowledge') in ['전혀 모른다', '이름만 들어봤다
     search_kwargs["k"] = 3  # 초보자는 더 기본적인 내용만 검색
 elif responses.get('ai_knowledge') in ['AI 모델이나 알고리즘을 직접 다뤄본 적 있다']:
     search_kwargs["k"] = 7  # 전문가는 더 깊은 검색
+
+#========== RAG 기반 도구 추천 ==========
+with st.spinner("벡터 데이터베이스 구축 중..."):
+    try:
+        # 임베딩 모델 초기화
+        embeddings = OpenAIEmbeddings()
+        
+        # 유니코드 처리를 위한 문서 정제
+        for doc in split_docs:
+            # 비ASCII 문자 처리
+            doc.page_content = re.sub(r'[\u2014\u2013\u2015\u2017\u2018\u2019\u201a\u201b\u201c\u201d\u201e\u201f\u2020\u2021\u2026\u2032\u2033]+', '-', doc.page_content)
+            # 나머지 특수 유니코드 문자 처리
+            doc.page_content = doc.page_content.encode('ascii', errors='ignore').decode('ascii')
+        
+        # 벡터 스토어 생성
+        vectorstore = FAISS.from_documents(split_docs, embeddings)
+        st.success("✅ 벡터 데이터베이스 구축 완료")
+        
+        # RAG 시스템 설정
+        qa = RetrievalQA.from_chain_type(
+            llm=OpenAI(temperature=0.3),
+            chain_type="stuff",
+            retriever=vectorstore.as_retriever(search_kwargs=search_kwargs)
+        )
+    except Exception as e:
+        st.error(f"❌ 벡터 데이터베이스 구축 중 오류 발생: {str(e)}")
+        st.stop()
 
 #========== AI 유형 추천 ==========
 
@@ -433,17 +610,19 @@ if hasattr(st.session_state, 'selected_tool') and st.session_state.selected_tool
         else:
             st.markdown("**설명**: 상세 설명 정보가 없습니다.")
         
-        # tools.txt에서 해당 도구 검색
-        embeddings = OpenAIEmbeddings()
+        # PDF에서 해당 도구 검색
         try:
-            vectorstore = FAISS.from_texts(texts=[page.page_content for page in pages], embedding=embeddings)
-            query = f"{tool_name}에 대한 상세 정보와 사용 방법"
-            docs = vectorstore.similarity_search(query, k=2)
-            
-            if docs:
-                st.markdown("### 📚 추가 정보")
-                for doc in docs:
-                    st.markdown(doc.page_content)
+            st.markdown("### 📚 PDF에서 추출한 추가 정보")
+            with st.spinner(f"{tool_name}에 관한 정보 검색 중..."):
+                query = f"{tool_name}에 대한 상세 정보와 사용 방법"
+                docs = vectorstore.similarity_search(query, k=2)
+                
+                if docs:
+                    for i, doc in enumerate(docs):
+                        st.markdown(f"**출처 #{i+1} (페이지 {doc.metadata.get('page', '알 수 없음')+1})**")
+                        st.markdown(doc.page_content)
+                else:
+                    st.info(f"{tool_name}에 관한 정보를 PDF에서 찾을 수 없습니다.")
         except Exception as e:
             st.error(f"도구 상세 정보 검색 중 오류 발생: {e}")
     else:
@@ -582,5 +761,144 @@ elif responses.get('ai_knowledge') in ['AI 모델이나 알고리즘을 직접 �
 st.info(f"📚 당신의 수준({user_level})에 맞는 학습 리소스를 추천합니다:")
 for resource in learning_resources[user_level]:
     st.markdown(f"- {resource}")
+
+#========== PDF 기반 AI 도구 질의응답 ==========
+st.markdown("---")
+st.markdown("### 🤖 AI 도구에 대해 질문하기")
+st.write("PDF 문서에서 학습한 지식을 기반으로 AI 도구에 관한 질문에 답변해 드립니다.")
+
+# 세션 상태에 질문-답변 저장
+if 'qa_history' not in st.session_state:
+    st.session_state.qa_history = []
+
+user_question = st.text_input("AI 도구에 관한 질문을 입력하세요", placeholder="예: ChatGPT의 주요 기능은 무엇인가요?")
+
+if user_question:
+    with st.spinner("답변 생성 중..."):
+        try:
+            # 응답 시간 측정 시작
+            start_time = time.time()
+            
+            # 질문 전처리 (유니코드 문자 처리)
+            clean_question = re.sub(r'[\u2014\u2013\u2015\u2017\u2018\u2019\u201a\u201b\u201c\u201d\u201e\u201f\u2020\u2021\u2026\u2032\u2033]+', '-', user_question)
+            clean_question = clean_question.encode('ascii', errors='ignore').decode('ascii')
+            
+            # 질문에 대한 컨텍스트 정보
+            context_prompt = f"""
+            당신은 AI 도구 추천 전문가입니다. 사용자의 질문에 정확하고 친절하게 답변해주세요.
+            답변은 반드시 한국어로 제공해야 합니다.
+            질문: {clean_question}
+            """
+            
+            # RAG 시스템으로 질문 처리
+            answer = qa.run(context_prompt)
+            
+            # 응답 시간 측정 종료
+            response_time = time.time() - start_time
+            
+            # 결과 저장
+            qa_result = {
+                "question": user_question,
+                "answer": answer,
+                "response_time": response_time,
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "rated": False
+            }
+            
+            # 세션 상태에 저장
+            st.session_state.qa_history.append(qa_result)
+            
+            st.markdown("### 📝 답변")
+            st.markdown(answer)
+            
+            # 응답 시간 표시
+            st.caption(f"응답 시간: {response_time:.2f}초")
+            
+            # 관련 문서 표시
+            docs = vectorstore.similarity_search(clean_question, k=2)
+            
+            with st.expander("참고 자료", expanded=False):
+                st.markdown("### 📄 참고한 문서")
+                for i, doc in enumerate(docs):
+                    st.markdown(f"**출처 #{i+1} (페이지 {doc.metadata.get('page', '알 수 없음')+1})**")
+                    st.markdown(doc.page_content)
+            
+            # 답변 평가 영역
+            st.markdown("### 📊 답변 평가")
+            st.write("이 답변이 얼마나 유용했나요?")
+            
+            col1, col2 = st.columns([3, 2])
+            
+            with col1:
+                rating = st.slider("만족도 평가", 1, 5, 3, key=f"rating_{len(st.session_state.qa_history)-1}")
+                feedback = st.text_area("추가 피드백 (선택사항)", key=f"feedback_{len(st.session_state.qa_history)-1}")
+            
+            with col2:
+                if st.button("평가 제출", key=f"submit_{len(st.session_state.qa_history)-1}"):
+                    # 평가 저장
+                    if save_rag_evaluation(user_question, answer, rating, feedback, response_time):
+                        st.success("평가가 성공적으로 저장되었습니다. 감사합니다!")
+                        # 평가 완료 표시
+                        st.session_state.qa_history[-1]["rated"] = True
+                    else:
+                        st.error("평가 저장 중 오류가 발생했습니다.")
+        
+        except Exception as e:
+            st.error(f"답변 생성 중 오류가 발생했습니다: {str(e)}")
+
+# 이전 질문-답변 기록 표시
+if st.session_state.qa_history:
+    with st.expander("이전 질문 기록", expanded=False):
+        for i, qa_item in enumerate(reversed(st.session_state.qa_history[:-1] if user_question else st.session_state.qa_history)):
+            st.markdown(f"**질문 {i+1}**: {qa_item['question']}")
+            st.markdown(f"**답변**: {qa_item['answer']}")
+            st.caption(f"응답 시간: {qa_item['response_time']:.2f}초 | 시간: {qa_item['timestamp']}")
+            st.markdown("---")
+
+#========== RAG 평가 지표 대시보드 ==========
+st.markdown("---")
+st.markdown("### 📈 RAG 시스템 성능 지표")
+
+# 평가 데이터 로드
+evaluations = load_rag_evaluations()
+
+if evaluations:
+    # 핵심 지표 표시
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        avg_rating = calculate_average_rating()
+        st.metric("평균 만족도 점수", f"{avg_rating:.2f}/5")
+    
+    with col2:
+        avg_time = calculate_average_response_time()
+        st.metric("평균 응답 시간", f"{avg_time:.2f}초")
+    
+    with col3:
+        total_questions = len(evaluations)
+        st.metric("총 질문 수", total_questions)
+    
+    # 평가 분포 시각화
+    rating_fig = visualize_ratings()
+    if rating_fig:
+        st.markdown("#### 사용자 만족도 분포")
+        st.pyplot(rating_fig)
+    
+    # 최근 피드백 표시
+    st.markdown("#### 최근 사용자 피드백")
+    
+    # 피드백이 있는 평가만 필터링
+    feedbacks = [eval for eval in evaluations if eval.get("user_feedback")]
+    
+    if feedbacks:
+        for i, feedback in enumerate(feedbacks[-3:]):  # 최근 3개만 표시
+            st.markdown(f"**질문**: {feedback['question']}")
+            st.markdown(f"**피드백**: {feedback['user_feedback']}")
+            st.caption(f"평가 점수: {feedback['user_rating']}/5 | 시간: {feedback['timestamp']}")
+            st.markdown("---")
+    else:
+        st.info("아직 텍스트 피드백이 없습니다.")
+else:
+    st.info("아직 평가 데이터가 없습니다. 질문을 통해 시스템을 평가해보세요.")
 
 st.button("🔄 설문 다시 하기", on_click=reset_survey)
