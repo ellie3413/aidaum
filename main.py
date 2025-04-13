@@ -638,39 +638,6 @@ if feedback_tool:
         else:
             st.error("피드백 저장 중 오류가 발생했습니다.")
 
-#========== 학습 리소스 추천 ==========
-st.markdown("---")
-st.markdown("### 📚 추천 학습 리소스")
-
-learning_resources = {
-    "초보자": [
-        "AI 기초 개념 이해하기 - 쉬운 시작 가이드",
-        "처음 만나는 ChatGPT - 기본 사용법",
-        "AI 도구 입문자를 위한 단계별 학습 경로"
-    ],
-    "중급자": [
-        "실무에 바로 적용하는 AI 도구 활용법",
-        "데이터 분석을 위한 AI 모델 활용하기",
-        "업무 자동화를 위한 AI 워크플로우 구축"
-    ],
-    "전문가": [
-        "고급 프롬프트 엔지니어링 기법",
-        "AI 모델 미세 조정 및 커스터마이징",
-        "RAG(Retrieval Augmented Generation) 고급 활용법"
-    ]
-}
-
-# 사용자 수준에 맞는 리소스 표시
-user_level = "초보자"
-if responses.get('ai_knowledge') in ['기본 개념은 알고 있다', '실제로 활용해본 경험이 있다']:
-    user_level = "중급자"
-elif responses.get('ai_knowledge') in ['AI 모델이나 알고리즘을 직접 다뤄본 적 있다']:
-    user_level = "전문가"
-
-st.info(f"📚 당신의 수준({user_level})에 맞는 학습 리소스를 추천합니다:")
-for resource in learning_resources[user_level]:
-    st.markdown(f"- {resource}")
-
 #========== PDF 기반 AI 도구 질의응답 ==========
 st.markdown("---")
 st.markdown("### 🤖 AI 도구에 대해 질문하기")
@@ -732,26 +699,6 @@ if user_question:
                     st.markdown(f"**출처 #{i+1} (페이지 {doc.metadata.get('page', '알 수 없음')+1})**")
                     st.markdown(doc.page_content)
             
-            # 답변 평가 영역
-            st.markdown("### 📊 답변 평가")
-            st.write("이 답변이 얼마나 유용했나요?")
-            
-            col1, col2 = st.columns([3, 2])
-            
-            with col1:
-                rating = st.slider("만족도 평가", 1, 5, 3, key=f"rating_{len(st.session_state.qa_history)-1}")
-                feedback = st.text_area("추가 피드백 (선택사항)", key=f"feedback_{len(st.session_state.qa_history)-1}")
-            
-            with col2:
-                if st.button("평가 제출", key=f"submit_{len(st.session_state.qa_history)-1}"):
-                    # 평가 저장
-                    if save_rag_evaluation(user_question, answer, rating, feedback, response_time):
-                        st.success("평가가 성공적으로 저장되었습니다. 감사합니다!")
-                        # 평가 완료 표시
-                        st.session_state.qa_history[-1]["rated"] = True
-                    else:
-                        st.error("평가 저장 중 오류가 발생했습니다.")
-        
         except Exception as e:
             st.error(f"답변 생성 중 오류가 발생했습니다: {str(e)}")
 
@@ -763,51 +710,5 @@ if st.session_state.qa_history:
             st.markdown(f"**답변**: {qa_item['answer']}")
             st.caption(f"응답 시간: {qa_item['response_time']:.2f}초 | 시간: {qa_item['timestamp']}")
             st.markdown("---")
-
-#========== RAG 평가 지표 대시보드 ==========
-"""st.markdown("---")
-st.markdown("### 📈 RAG 시스템 성능 지표")
-
-# 평가 데이터 로드
-evaluations = load_rag_evaluations()
-
-if evaluations:
-    # 핵심 지표 표시
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        avg_rating = calculate_average_rating()
-        st.metric("평균 만족도 점수", f"{avg_rating:.2f}/5")
-    
-    with col2:
-        avg_time = calculate_average_response_time()
-        st.metric("평균 응답 시간", f"{avg_time:.2f}초")
-    
-    with col3:
-        total_questions = len(evaluations)
-        st.metric("총 질문 수", total_questions)
-    
-    # 평가 분포 시각화
-    rating_fig = visualize_ratings()
-    if rating_fig:
-        st.markdown("#### 사용자 만족도 분포")
-        st.pyplot(rating_fig)
-    
-    # 최근 피드백 표시
-    st.markdown("#### 최근 사용자 피드백")
-    
-    # 피드백이 있는 평가만 필터링
-    feedbacks = [eval for eval in evaluations if eval.get("user_feedback")]
-    
-    if feedbacks:
-        for i, feedback in enumerate(feedbacks[-3:]):  # 최근 3개만 표시
-            st.markdown(f"**질문**: {feedback['question']}")
-            st.markdown(f"**피드백**: {feedback['user_feedback']}")
-            st.caption(f"평가 점수: {feedback['user_rating']}/5 | 시간: {feedback['timestamp']}")
-            st.markdown("---")
-    else:
-        st.info("아직 텍스트 피드백이 없습니다.")
-else:
-    st.info("아직 평가 데이터가 없습니다. 질문을 통해 시스템을 평가해보세요.")"""
 
 st.button("🔄 설문 다시 하기", on_click=reset_survey)

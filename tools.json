@@ -3,31 +3,31 @@
     "name": "ChatGPT",
     "category": "AI Assistants (Chatbots)",
     "difficulty": "low",
-    "description": "ChatGPT is a highly popular AI assistant used for tasks ranging from brainstorming and translation to code generation and image-based chart analysis. The latest 4o model includes multimodal input and output, personalized context retention, and even Operator features for automated online actions. It's considered extremely versatile and user-friendly."
+    "description": "다양한 텍스트 생성과 대화가 가능한 OpenAI의 대표적인 AI 챗봇으로, 코딩, 글쓰기, 질문 응답 등 다양한 작업에 활용할 수 있습니다."
   },
   {
     "name": "Claude",
     "category": "AI Assistants (Chatbots)",
     "difficulty": "low",
-    "description": "Claude 3.5 Sonnet by Anthropic excels in programming tasks with strong code review and debugging abilities. It offers a warm conversational style and is known for high contextual understanding, especially with modern software development frameworks."
+    "description": "Anthropic에서 개발한 AI 어시스턴트로, 친절하고 정확한 응답과 특히 코딩에 강점을 가지고 있습니다."
   },
   {
     "name": "Gemini",
     "category": "AI Assistants (Chatbots)",
     "difficulty": "low",
-    "description": "Gemini is Google's AI assistant with deep integration into the Google ecosystem. It's adept at summarizing content, creative writing, and image-based tasks. It supports both free and advanced paid plans with models tailored for complex reasoning."
+    "description": "Google에서 개발한 AI 어시스턴트로 구글 생태계와 높은 통합성을 가지고 있으며 검색과 정보 요약에 강점이 있습니다."
   },
   {
     "name": "DeepSeek",
     "category": "AI Assistants (Chatbots)",
     "difficulty": "medium",
-    "description": "DeepSeek is known for its transparency, efficiency, and cost-effectiveness. The R1 and V3 models offer comprehensive answers and coding suggestions, making it a strong open-source alternative to mainstream LLMs."
+    "description": "DeepSeek은 투명성, 효율성, 비용 효율성이 강점인 AI 챗봇입니다. R1 및 V3 모델을 통해 복잡한 질문에 대한 포괄적인 분석과 빠른 응답을 제공합니다. 특히 코딩 지원에 강하며, 간결하고 정확한 코드 제안을 제공해 개발자들에게 인기가 많습니다."
   },
   {
     "name": "Grok",
     "category": "AI Assistants (Chatbots)",
     "difficulty": "medium",
-    "description": "Grok 3 is a conversational AI with access to real-time Twitter data and fewer content restrictions. While not the most consistent in technical outputs, it's notable for its openness and unique information access features."
+    "description": "Grok 3는 실시간 Twitter 데이터에 접근할 수 있고, 콘텐츠 제약이 적은 대화형 AI입니다. 기술적인 작업에서는 일관성이 부족할 수 있지만, 개방성과 독특한 정보 접근 기능이 돋보이는 도구입니다."
   },
   {
     "name": "Synthesia",
@@ -39,61 +39,61 @@
     "name": "Runway",
     "category": "Video Generation and Editing",
     "difficulty": "hard",
-    "description": "텍스트나 이미지 기반으로 영상을 만들고 편집할 수 있는 창의적인 영상 제작 플랫폼입니다."
+    "description": "텍스트 또는 이미지를 기반으로 영상 콘텐츠를 만들고 편집할 수 있는 창의적인 영상 제작 툴입니다. Motion Brush, 카메라 제어, 인페인팅 등 고급 기능이 포함되어 있습니다."
   },
   {
     "name": "Filmora",
     "category": "Video Generation and Editing",
     "difficulty": "medium",
-    "description": "Filmora is a beginner-friendly video editor packed with AI features like Smart Cutout, Background Removal, and Motion Tracking. It's ideal for social media creators and YouTubers who want polished results quickly, although it may slow down with high-res files."
+    "description": "초보자에게도 친숙한 영상 편집 도구로, AI 기반 스마트 오려내기, 배경 제거, 모션 트래킹 등의 기능을 제공합니다. 고화질 영상에서는 다소 느려질 수 있습니다."
   },
   {
     "name": "OpusClip",
     "category": "Video Generation and Editing",
     "difficulty": "low",
-    "description": "OpusClip uses AI to automatically generate short, engaging social media clips from long-form video content. It detects highlights, resizes for platforms like TikTok, and adds captions and emojis, streamlining content creation for creators."
+    "description": "긴 영상에서 하이라이트를 자동으로 추출하고 TikTok, Instagram 등의 플랫폼에 맞게 크기를 조정해주는 소셜 미디어 클립 생성 도구입니다. 자막 및 이모지 삽입 기능도 지원됩니다."
   },
   {
     "name": "GPT-4o",
     "category": "Image Generation",
     "difficulty": "low",
-    "description": "GPT-4o's image generation tool offers high realism and text accuracy in generated visuals. It supports character consistency and handles facial features and posters better than previous models. However, it may struggle with fantasy prompts or highly stylized scenes."
+    "description": "매우 사실적인 이미지 생성이 가능하며, 얼굴, 포스터, 문자 삽입 등의 정확도가 높습니다. 다만, 환상적인 스타일이나 지도 등의 생성에는 제한이 있습니다."
   },
   {
     "name": "Midjourney",
     "category": "Image Generation",
     "difficulty": "medium",
-    "description": null
+    "description": "텍스트 프롬프트를 기반으로 고품질 이미지를 생성하는 AI 도구로, 예술적 표현과 창의적인 시각화에 탁월합니다."
   },
   {
     "name": "Fathom",
     "category": "Notetakers and Meeting Assistants",
     "difficulty": "easy",
-    "description": "Fathom AI Notetaker records meetings, provides accurate summaries, and searchable transcripts with timestamped answers. It's ideal for client calls and team discussions, helping users stay engaged without manual note-taking. Free plan available with premium features starting at $19/month."
+    "description": "회의를 자동으로 녹음하고, 핵심 요약 및 타임스탬프가 포함된 전사 기능을 제공하는 AI 회의 도우미입니다. 고객 회의 및 팀 협업에 유용합니다."
   },
   {
     "name": "Nyota",
     "category": "Notetakers and Meeting Assistants",
     "difficulty": "medium",
-    "description": "Nyota is a meeting assistant that not only captures transcripts and summaries but integrates them into project management tools. It automates note-taking, generates action items, and helps structure meeting agendas. Suitable for collaborative teams."
+    "description": "회의 기록을 캡처할 뿐만 아니라, 프로젝트 관리 도구와 연동되어 액션 아이템 자동 생성 및 회의 주제 추천 등 협업에 특화된 기능을 제공합니다."
   },
   {
     "name": "Deep Research",
     "category": "Research",
     "difficulty": "hard",
-    "description": "OpenAI's Deep Research tool scans and synthesizes hundreds of sources into a comprehensive, structured report in minutes. It's excellent for legal, financial, and technical analysis, offering strong pattern recognition and summarization capabilities."
+    "description": "수백 개의 온라인 출처를 분석하고 구조화된 보고서를 몇 분 내에 생성해주는 리서치 특화 AI 도구입니다. 법률, 금융, 기술 분야에서 유용하게 활용됩니다."
   },
   {
     "name": "Rytr",
     "category": "Writing",
     "difficulty": "easy",
-    "description": "Rytr is a fast and efficient writing assistant best suited for short-form content like emails, product descriptions, and social media posts. It offers over 40 templates and supports 30+ languages, with a built-in plagiarism checker. Affordable and user-friendly."
+    "description": "이메일, 제품 설명, SNS 콘텐츠 등 단문 작성에 적합한 빠르고 간편한 AI 글쓰기 도구입니다. 40개 이상의 템플릿과 30개 이상의 언어를 지원하며, 표절 검사 기능도 포함되어 있습니다."
   },
   {
     "name": "Sudowrite",
     "category": "Writing",
     "difficulty": "medium",
-    "description": "Sudowrite is tailored for fiction writers. It helps generate creative content, build characters, and expand plot outlines. Features like Describe and Brainstorm are especially useful for breaking writer's block and improving storytelling."
+    "description": "소설가나 스토리텔러를 위한 AI 도구로, 캐릭터 설정, 묘사, 아이디어 확장 등에 특화되어 있습니다. 창의적 글쓰기의 막힘을 해결하는 데 효과적입니다."
   },
   {
     "name": "Grammarly",
