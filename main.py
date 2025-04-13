@@ -30,7 +30,6 @@ os.environ["OPENAI_API_KEY"] = api_key
 try:
     # OpenAI 객체 생성 테스트
     test_llm = OpenAI(temperature=0.1)
-    st.success("✅ OpenAI API 키가 유효합니다.")
 except Exception as e:
     st.error(f"❌ OpenAI API 키 검증 중 오류가 발생했습니다: {str(e)}")
     st.stop()
