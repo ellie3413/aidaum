@@ -39,7 +39,7 @@ api_key = re.sub(r'[^\x00-\x7F]+', '', api_key)  # 비ASCII 문자 제거
 api_key = re.sub(r'[^\w\-\.]', '', api_key)      # 영문자, 숫자, 하이픈, 점만 유지
     
 # API 키 정보 표시 (디버깅용)
-st.info(f"API 키: {api_key[:5]}...{api_key[-5:]} (길이: {len(api_key)})")
+#st.info(f"API 키: {api_key[:5]}...{api_key[-5:]} (길이: {len(api_key)})")
 
 os.environ["OPENAI_API_KEY"] = api_key
 
@@ -47,7 +47,7 @@ os.environ["OPENAI_API_KEY"] = api_key
 try:
     # OpenAI 객체 생성 테스트
     test_llm = OpenAI(temperature=0.1)
-    st.success("✅ OpenAI API 키가 유효합니다.")
+    #st.success("✅ OpenAI API 키가 유효합니다.")
 except Exception as e:
     st.error(f"❌ OpenAI API 키 검증 중 오류가 발생했습니다: {str(e)}")
     st.stop()
@@ -468,7 +468,7 @@ with st.spinner("PDF 파일 로딩 중..."):
         pdf_loader = PyPDFLoader("tools.pdf")
         # PDF 파일에서 문서 추출
         pages = pdf_loader.load()
-        st.success(f"✅ PDF 파일 로드 완료: {len(pages)}페이지")
+        #st.success(f"✅ PDF 파일 로드 완료: {len(pages)}페이지")
         
         # 텍스트 분할 설정
         text_splitter = RecursiveCharacterTextSplitter(
@@ -479,7 +479,7 @@ with st.spinner("PDF 파일 로딩 중..."):
         
         # 문서 분할
         split_docs = text_splitter.split_documents(pages)
-        st.success(f"✅ 문서 분할 완료: {len(split_docs)}개 청크")
+        #st.success(f"✅ 문서 분할 완료: {len(split_docs)}개 청크")
     except Exception as e:
         st.error(f"❌ PDF 파일 로드 중 오류 발생: {str(e)}")
         st.stop()
