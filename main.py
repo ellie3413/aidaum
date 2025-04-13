@@ -23,7 +23,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 #========== 환경 변수 로딩 ==========
 load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
+api_key = st.secrets("OPENAI_API_KEY")
 
 # API 키 검증
 if not api_key:
