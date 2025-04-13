@@ -377,7 +377,7 @@ def generate_expert_explanation_by_sections(tool_name, qa_system, st):
         {
             "emoji": "✨",
             "title": f"{tool_name}이란?",
-            "prompt": f"{tool_name}의 핵심 기능과 목적을 간결하게 설명해주세요. 3-4문장으로 요약해주세요."
+            "prompt": f"{tool_name}의 핵심 기능과 목적을 간결하게 설명해주세요. 2-3문장으로 요약해주세요."
         },
         {
             "emoji": "🚀",
