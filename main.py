@@ -1,5 +1,3 @@
-# main.py
-
 import streamlit as st
 # Streamlit 설정을 가장 먼저 호출해야 함
 st.set_page_config(page_title="AI 도구 추천", page_icon="🌟", layout="wide")
@@ -38,7 +36,7 @@ except Exception as e:
 def load_json_data():
     """JSON 파일에서 AI 도구 데이터 로드"""
     try:
-        with open("ai_tools_detailed_with_difficulty.json", "r", encoding="utf-8") as f:
+        with open("tools.json", "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
         st.error(f"❌ JSON 파일 로드 오류: {e}")
@@ -49,20 +47,57 @@ def filter_tools_by_difficulty(tools, difficulty_level):
     if difficulty_level == "모든 난이도":
         return tools
     
+    difficulty_map = {
+        "쉬움": "low", 
+        "중간": "medium", 
+        "어려움": "hard"
+    }
+    
+    target_difficulty = difficulty_map.get(difficulty_level)
+    
     filtered = []
     for tool in tools:
         # None 난이도는 중간 난이도로 간주
-        if tool.get("difficulty") is None and difficulty_level == "중간":
+        if tool.get("difficulty") is None and target_difficulty == "medium":
             filtered.append(tool)
-        elif tool.get("difficulty") == difficulty_level.lower():
+        elif tool.get("difficulty") == target_difficulty:
             filtered.append(tool)
     return filtered
+
+def filter_tools_by_category(tools, category):
+    """카테고리 기준으로 AI 도구 필터링"""
+    if category == "모든 카테고리":
+        return tools
+    
+    return [tool for tool in tools if tool.get("category") == category]
+
+def filter_tools_by_search(tools, search_term):
+    """검색어 기준으로 AI 도구 필터링"""
+    if not search_term:
+        return tools
+    
+    return [tool for tool in tools if search_term.lower() in tool.get("name", "").lower() or 
+            (tool.get("description") and search_term.lower() in tool.get("description", "").lower())]
 
 def get_tool_details(tool_name, tools_data):
     """도구 이름으로 세부 정보 검색"""
     for tool in tools_data:
         if tool["name"].lower() == tool_name.lower():
             return tool
+    return None
+
+def find_best_matching_tool(tool_name, tools_data):
+    """가장 유사한 도구 이름 찾기"""
+    # 정확히 일치하는 도구 먼저 확인
+    for tool in tools_data:
+        if tool["name"].lower() == tool_name.lower():
+            return tool
+    
+    # 부분 일치하는 도구 확인
+    for tool in tools_data:
+        if tool_name.lower() in tool["name"].lower() or tool["name"].lower() in tool_name.lower():
+            return tool
+    
     return None
 
 def save_user_feedback(tool_name, rating, feedback_text):
@@ -118,37 +153,115 @@ def visualize_category_distribution(tools_data):
     plt.tight_layout()
     return fig
 
-def extract_recommended_tools(answer_text):
-    """AI 추천 답변에서 도구 이름 추출"""
-    # 도구 이름 추출 패턴 (": "나 "- " 뒤에 오는 단어나 구문)
-    tool_patterns = [
-        r'\*\*(.*?)\*\*',  # **Tool Name**
-        r'이름:\s*(.*?)(?:\n|$)',  # 이름: Tool Name
-        r'도구명:\s*(.*?)(?:\n|$)',  # 도구명: Tool Name
-        r'^\d+\.\s*(.*?)(?::|$)',  # 1. Tool Name: 또는 1. Tool Name
-        r'^\-\s*(.*?)(?::|$)',  # - Tool Name: 또는 - Tool Name
-    ]
+def recommend_tools_by_criteria(tools_data, user_responses, max_recommendations=3):
+    """사용자 응답 기반으로 AI 도구 알고리즘적 추천"""
+    if not tools_data:
+        return []
     
-    tools = []
-    lines = answer_text.split('\n')
+    # 점수 초기화
+    for tool in tools_data:
+        tool['score'] = 0
+        
+    # 1. 난이도 기준 점수화 (사용자 선호 난이도에 가까울수록 높은 점수)
+    difficulty_map = {
+        "쉬움 (초보자도 바로 사용 가능한 도구)": "low",
+        "중간 (기본적인 지식이 필요한 도구)": "medium", 
+        "어려움 (전문적인 지식이 필요한 고급 도구)": "hard",
+        "난이도보다는 기능 중심으로 선택하고 싶음": None
+    }
     
-    for line in lines:
-        for pattern in tool_patterns:
-            matches = re.findall(pattern, line, re.MULTILINE)
-            if matches:
-                for match in matches:
-                    # 특수문자 및 불필요한 텍스트 제거
-                    tool_name = match.strip(':,.()[]{}').strip()
-                    if tool_name and len(tool_name) < 50:  # 너무 긴 텍스트는 도구명이 아닐 가능성이 높음
-                        tools.append(tool_name)
+    preferred_difficulty = difficulty_map.get(
+        user_responses.get('preferred_difficulty', "난이도보다는 기능 중심으로 선택하고 싶음")
+    )
     
-    # 중복 제거 및 정제
-    unique_tools = []
-    for tool in tools:
-        if tool not in unique_tools and not any(keyword in tool.lower() for keyword in ['이름', '도구', '추천', '기능', '카테고리']):
-            unique_tools.append(tool)
+    # 난이도 점수 계산
+    if preferred_difficulty:
+        for tool in tools_data:
+            if tool.get('difficulty') == preferred_difficulty:
+                tool['score'] += 5
+            # None 난이도는 medium으로 간주
+            elif tool.get('difficulty') is None and preferred_difficulty == "medium":
+                tool['score'] += 4
     
-    return unique_tools
+    # 2. AI 지식 수준에 따른 난이도 조정
+    knowledge_level = user_responses.get('ai_knowledge', '')
+    if knowledge_level in ['전혀 모른다', '이름만 들어봤다']:
+        # 초보자는 쉬운 도구 선호
+        for tool in tools_data:
+            if tool.get('difficulty') == 'low':
+                tool['score'] += 3
+    elif knowledge_level in ['AI 모델이나 알고리즘을 직접 다뤄본 적 있다']:
+        # 전문가는 어려운 도구 선호
+        for tool in tools_data:
+            if tool.get('difficulty') == 'hard':
+                tool['score'] += 3
+    
+    # 3. 관심 분야 기반 점수화
+    interests = user_responses.get('tool_interest', [])
+    interest_category_map = {
+        "텍스트 생성": ["AI Assistants (Chatbots)", "Writing", "Grammar and Writing Improvement"],
+        "이미지 생성": ["Image Generation", "Graphic Design"],
+        "영상/음성 합성": ["Video Generation and Editing", "Voice Generation", "Music Generation"],
+        "데이터 분석 및 시각화": ["Research"],
+        "업무 자동화": ["Project Management", "Scheduling", "Email"],
+        "검색 및 지식 관리": ["Search Engines", "Knowledge Management"],
+        "코드 생성 및 개발 지원": ["App Builders & Coding"],
+        "번역 및 언어 학습": ["Grammar and Writing Improvement"],
+        "기타": []
+    }
+    
+    for interest in interests:
+        matching_categories = interest_category_map.get(interest, [])
+        for tool in tools_data:
+            if tool.get('category') in matching_categories:
+                tool['score'] += 4
+    
+    # 4. 특정 목적 기반 점수화
+    purposes = user_responses.get('specific_purpose', [])
+    purpose_category_map = {
+        "문서 작성 및 편집": ["Writing", "Grammar and Writing Improvement"],
+        "이미지/영상 제작": ["Image Generation", "Video Generation and Editing"],
+        "데이터 분석": ["Research"],
+        "프로그래밍 및 개발": ["App Builders & Coding"],
+        "마케팅 및 홍보": ["Marketing", "Social Media Management"],
+        "교육 및 학습": ["Knowledge Management"],
+        "업무 자동화": ["Project Management", "Scheduling", "Email"],
+        "고객 서비스": ["Customer Service"],
+        "연구 및 논문 작성": ["Research", "Writing"],
+        "기타": []
+    }
+    
+    for purpose in purposes:
+        matching_categories = purpose_category_map.get(purpose, [])
+        for tool in tools_data:
+            if tool.get('category') in matching_categories:
+                tool['score'] += 4
+    
+    # 도구 설명이 있는 도구에 가중치 부여
+    for tool in tools_data:
+        if tool.get('description') and len(str(tool.get('description'))) > 10:
+            tool['score'] += 1
+    
+    # 최종 점수 기준 정렬 및 상위 추천
+    sorted_tools = sorted(tools_data, key=lambda x: x.get('score', 0), reverse=True)
+    
+    # 최소한 하나의 쉬운 도구가 포함되도록 보장 (초보자를 위한 배려)
+    recommended = []
+    has_easy_tool = False
+    
+    # 상위 도구들 중에서 선택
+    for tool in sorted_tools:
+        if len(recommended) < max_recommendations:
+            recommended.append(tool)
+            if tool.get('difficulty') == 'low':
+                has_easy_tool = True
+        elif not has_easy_tool and tool.get('difficulty') == 'low':
+            # 쉬운 도구가 없으면 마지막 도구를 쉬운 도구로 교체
+            recommended[-1] = tool
+            has_easy_tool = True
+            break
+    
+    return recommended
 
 def create_radar_chart(tools_data, recommended_tools):
     """추천된 도구들의 카테고리 레이더 차트 생성"""
@@ -164,12 +277,10 @@ def create_radar_chart(tools_data, recommended_tools):
     category_counts = {category: 0 for category in categories}
     tool_categories = {}
     
-    for tool_name in recommended_tools:
-        for tool in tools_data:
-            if tool["name"].lower() == tool_name.lower() and tool.get("category") in categories:
-                category_counts[tool.get("category")] += 1
-                if tool_name not in tool_categories:
-                    tool_categories[tool_name] = tool.get("category")
+    for tool in recommended_tools:
+        if tool.get("category") in categories:
+            category_counts[tool.get("category")] += 1
+            tool_categories[tool.get("name")] = tool.get("category")
     
     # 레이더 차트 데이터 준비
     values = [category_counts.get(category, 0) for category in categories]
@@ -193,6 +304,35 @@ def create_radar_chart(tools_data, recommended_tools):
     
     plt.title('추천된 도구들의 카테고리 분포')
     return fig, tool_categories
+
+def translate_difficulty(difficulty):
+    """난이도 영어 표현을 한국어로 변환"""
+    if difficulty == "low":
+        return "쉬움"
+    elif difficulty == "medium":
+        return "중간"
+    elif difficulty == "hard":
+        return "어려움"
+    return "중간"  # 기본값
+
+def add_korean_description(tools):
+    """영어 설명이 있는 도구에 한국어 설명 추가"""
+    korean_descriptions = {
+        "ChatGPT": "다양한 텍스트 생성과 대화가 가능한 OpenAI의 대표적인 AI 챗봇으로, 코딩, 글쓰기, 질문 응답 등 다양한 작업에 활용할 수 있습니다.",
+        "Claude": "Anthropic에서 개발한 AI 어시스턴트로, 친절하고 정확한 응답과 특히 코딩에 강점을 가지고 있습니다.",
+        "Gemini": "Google에서 개발한 AI 어시스턴트로 구글 생태계와 높은 통합성을 가지고 있으며 검색과 정보 요약에 강점이 있습니다.",
+        "Midjourney": "텍스트 프롬프트를 기반으로 고품질 이미지를 생성하는 AI 도구로, 예술적 표현과 창의적인 시각화에 탁월합니다.",
+        "Perplexity": "다양한 정보 소스를 활용해 깊이 있는 검색과 답변을 제공하는 AI 검색 엔진입니다.",
+        "Grammarly": "텍스트 작성 시 문법, 맞춤법, 문체를 자동으로 교정해주는 AI 글쓰기 도우미입니다.",
+        "Canva Magic Studio": "손쉬운 디자인 제작을 위한 AI 기능이 강화된 그래픽 디자인 플랫폼입니다.",
+        "Cursor": "AI 기반 코드 작성과 편집을 도와주는 개발자 도구로, 코딩 생산성을 크게 향상시킵니다."
+    }
+    
+    for tool in tools:
+        if tool.get("name") in korean_descriptions and (tool.get("description") is None or "Korean" not in tool.get("lang", [])):
+            tool["korean_description"] = korean_descriptions[tool.get("name")]
+    
+    return tools
 
 #========== Streamlit UI ==========
 st.title("🎯 AI 리터러시 기반 AI 도구 추천")
@@ -236,93 +376,118 @@ if responses.get('ai_knowledge') in ['전혀 모른다', '이름만 들어봤다
 elif responses.get('ai_knowledge') in ['AI 모델이나 알고리즘을 직접 다뤄본 적 있다']:
     search_kwargs["k"] = 7  # 전문가는 더 깊은 검색
 
-#========== RAG 기반 도구 추천 ==========
-embeddings = OpenAIEmbeddings()
-
-# 문서에서 텍스트 추출
-texts = [page.page_content for page in pages]
-metadatas = [page.metadata for page in pages]
-
-# 벡터스토어 생성
-try:
-    vectorstore = FAISS.from_texts(texts=texts, embedding=embeddings, metadatas=metadatas)
-    st.success("✅ 벡터스토어가 성공적으로 생성되었습니다.")
-except Exception as e:
-    st.error(f"❌ 벡터스토어 생성 중 오류가 발생했습니다: {str(e)}")
-    st.stop()
-
-# 최신 버전의 Langchain에 맞게 RetrievalQA 체인 생성
-qa = RetrievalQA.from_chain_type(
-    llm=OpenAI(temperature=0.3),
-    chain_type="stuff",  # 명시적으로 체인 타입 지정
-    retriever=vectorstore.as_retriever(search_kwargs=search_kwargs)
-)
-
-# 응답 요약 프롬프트 생성
-summary = f"""
-사용자는 현재 AI에 대해 '{responses['ai_knowledge']}' 수준의 이해도를 가지고 있고,
-주된 목적은 '{responses['purpose']}', 직업은 '{responses['job']}'입니다.
-현재 AI 도구는 '{responses['ai_tool_usage']}' 정도로 사용 중이며,
-관심 분야는 {', '.join(responses.get('tool_interest', []))}입니다.
-구체적으로 {', '.join(responses.get('specific_purpose', []))}에 활용하고 싶어합니다.
-선호하는 도구 난이도는 '{responses.get('preferred_difficulty', '모든 난이도')}'이며,
-학습에서 가장 필요한 것은 '{responses['learning_need']}'라고 응답했습니다.
-주로 {', '.join(responses.get('platform', []))} 환경에서 사용합니다.
-"""
-
-prompt = f"""
-다음 사용자의 배경 및 관심사에 적합한 AI 도구 5가지를 찾아주세요.
-각 도구에 대해 이름, 카테고리, 기능, 추천 이유를 포함해주세요.
-사용자의 AI 경험 수준에 맞는 도구를 추천해주세요 (초보자/중급자/전문가).
-가능하면 tools.txt 뿐만 아니라 ai_tools_detailed_with_difficulty.json에 있는 도구 정보도 활용해주세요.
-응답은 명확하게 구조화하고, 각 도구마다 구분선(---)으로 분리해주세요.
-각 도구 이름을 볼드체(**도구명**)로 표시해주세요.
-
-{summary}
-"""
-
+#========== 알고리즘 기반 도구 추천 ==========
 st.markdown("### 🧠 맞춤형 AI 도구 추천 결과")
+
+# 한국어 설명 추가
+tools_data = add_korean_description(tools_data)
+
+# 알고리즘 기반 추천
 with st.spinner("추천 생성 중입니다..."):
-    answer = qa.run(prompt)
+    recommended_tools = recommend_tools_by_criteria(tools_data, responses, max_recommendations=3)
 
 # 추천 결과 표시
-col1, col2 = st.columns([3, 2])
-
-with col1:
-    st.markdown(answer)
+if recommended_tools:
+    st.success(f"✅ 설문 응답에 기반한 맞춤형 AI 도구 추천이 완료되었습니다.")
     
-    # 추천된 도구 목록 추출
-    recommended_tools = extract_recommended_tools(answer)
+    # 3개의 열로 추천 도구 표시
+    cols = st.columns(len(recommended_tools))
     
-    if not recommended_tools:
-        st.warning("⚠️ 추천된 도구를 정확하게 식별할 수 없습니다.")
-    else:
-        st.success(f"✅ 식별된 추천 도구: {', '.join(recommended_tools)}")
+    for i, tool in enumerate(recommended_tools):
+        with cols[i]:
+            st.markdown(f"### {i+1}. {tool.get('name')}")
+            st.markdown(f"**카테고리**: {tool.get('category', '정보 없음')}")
+            st.markdown(f"**난이도**: {translate_difficulty(tool.get('difficulty', 'medium'))}")
+            
+            # 한국어 설명 우선, 없으면 기존 설명 사용
+            if tool.get("korean_description"):
+                st.markdown(f"**설명**: {tool.get('korean_description')}")
+            elif tool.get("description"):
+                st.markdown(f"**설명**: {tool.get('description')}")
+            else:
+                st.markdown("**설명**: 상세 설명 정보가 없습니다.")
+            
+            # 도구별 상세 설명 버튼
+            if st.button(f"{tool.get('name')} 자세히 보기", key=f"detail_{i}"):
+                # 세션 상태에 선택된 도구 저장
+                st.session_state.selected_tool = tool.get('name')
+                st.rerun()
+else:
+    st.warning("⚠️ 추천 도구를 찾을 수 없습니다. 다른 설문 응답을 시도해 보세요.")
 
-# 시각화 및 분석
-with col2:
-    if tools_data and recommended_tools:
-        # 레이더 차트: 추천 도구 카테고리 분석
-        radar_fig, tool_categories = create_radar_chart(tools_data, recommended_tools)
-        st.markdown("#### 📊 추천 도구 카테고리 분석")
-        st.pyplot(radar_fig)
+# 선택된 도구 상세 정보 표시
+if hasattr(st.session_state, 'selected_tool') and st.session_state.selected_tool:
+    tool_name = st.session_state.selected_tool
+    st.markdown(f"## {tool_name} 상세 정보")
+    
+    # 툴 정보 찾기
+    tool_info = get_tool_details(tool_name, tools_data)
+    
+    if tool_info:
+        st.markdown(f"**카테고리**: {tool_info.get('category', '정보 없음')}")
+        st.markdown(f"**난이도**: {translate_difficulty(tool_info.get('difficulty', 'medium'))}")
         
-        # 추천 도구별 세부 정보
-        st.markdown("#### 📋 추천 도구 상세 정보")
-        for tool_name in recommended_tools:
-            tool_info = get_tool_details(tool_name, tools_data)
-            if tool_info:
-                with st.expander(f"{tool_name} 세부 정보", expanded=False):
-                    st.markdown(f"**카테고리**: {tool_info.get('category', '정보 없음')}")
-                    st.markdown(f"**난이도**: {tool_info.get('difficulty', '중간')}")
-                    st.markdown(f"**설명**: {tool_info.get('description', '상세 설명 없음')}")
+        # 한국어 설명 우선, 없으면 기존 설명 사용
+        if tool_info.get("korean_description"):
+            st.markdown(f"**설명**: {tool_info.get('korean_description')}")
+        elif tool_info.get("description"):
+            st.markdown(f"**설명**: {tool_info.get('description')}")
+        else:
+            st.markdown("**설명**: 상세 설명 정보가 없습니다.")
+        
+        # tools.txt에서 해당 도구 검색
+        embeddings = OpenAIEmbeddings()
+        try:
+            vectorstore = FAISS.from_texts(texts=[page.page_content for page in pages], embedding=embeddings)
+            query = f"{tool_name}에 대한 상세 정보와 사용 방법"
+            docs = vectorstore.similarity_search(query, k=2)
+            
+            if docs:
+                st.markdown("### 📚 추가 정보")
+                for doc in docs:
+                    st.markdown(doc.page_content)
+        except Exception as e:
+            st.error(f"도구 상세 정보 검색 중 오류 발생: {e}")
+    else:
+        st.error(f"{tool_name}에 대한 정보를 찾을 수 없습니다.")
+    
+    # 상세보기 닫기
+    if st.button("상세 정보 닫기"):
+        del st.session_state.selected_tool
+        st.rerun()
+
+#========== 시각화 및 분석 ==========
+st.markdown("---")
+st.markdown("### 📊 추천 도구 분석")
+
+if recommended_tools:
+    # 레이더 차트: 추천 도구 카테고리 분석
+    radar_fig, tool_categories = create_radar_chart(tools_data, recommended_tools)
+    st.pyplot(radar_fig)
+    
+    # 도구 추천 점수 시각화
+    st.markdown("#### 추천 점수 분포")
+    score_fig, ax = plt.subplots(figsize=(8, 4))
+    tool_names = [tool.get('name') for tool in recommended_tools]
+    scores = [tool.get('score', 0) for tool in recommended_tools]
+    
+    bars = ax.barh(tool_names, scores, color=['#2E86C1', '#3498DB', '#85C1E9'])
+    
+    # 값 표시
+    for i, (score, bar) in enumerate(zip(scores, bars)):
+        ax.text(score + 0.5, i, f"{score}", ha='left', va='center')
+    
+    plt.xlabel('추천 점수')
+    plt.title('AI 도구 추천 점수')
+    plt.tight_layout()
+    st.pyplot(score_fig)
 
 #========== 난이도 필터 및 세부 정보 ==========
 st.markdown("---")
 st.markdown("### 🔍 AI 도구 데이터베이스 탐색")
 
 if tools_data:
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         # 난이도별 필터링
@@ -334,11 +499,14 @@ if tools_data:
         categories = ["모든 카테고리"] + sorted(list(set([tool.get("category", "기타") for tool in tools_data if tool.get("category")])))
         selected_category = st.selectbox("카테고리별 필터링", categories)
     
+    with col3:
+        # 검색어 필터링
+        search_term = st.text_input("🔍 도구 이름 또는 설명 검색")
+    
     # 필터링 적용
     filtered_tools = filter_tools_by_difficulty(tools_data, selected_difficulty)
-    
-    if selected_category != "모든 카테고리":
-        filtered_tools = [tool for tool in filtered_tools if tool.get("category") == selected_category]
+    filtered_tools = filter_tools_by_category(filtered_tools, selected_category)
+    filtered_tools = filter_tools_by_search(filtered_tools, search_term)
     
     # 카테고리별 도구 분포 시각화
     st.markdown("### 📊 AI 도구 카테고리 분포")
@@ -351,19 +519,28 @@ if tools_data:
         tool_df = pd.DataFrame([{
             "이름": tool.get("name", ""),
             "카테고리": tool.get("category", ""),
-            "난이도": tool.get("difficulty", "중간")
+            "난이도": translate_difficulty(tool.get("difficulty", "medium"))
         } for tool in filtered_tools])
         
         st.dataframe(tool_df, use_container_width=True)
         
-        # 도구 검색
-        search_term = st.text_input("🔍 도구 이름 검색")
-        if search_term:
-            filtered_df = tool_df[tool_df["이름"].str.contains(search_term, case=False, na=False)]
-            if not filtered_df.empty:
-                st.dataframe(filtered_df, use_container_width=True)
-            else:
-                st.info(f"'{search_term}'에 일치하는 도구가 없습니다.")
+        # 도구 상세 정보 확인
+        selected_tool_name = st.selectbox("상세 정보를 볼 도구 선택", ["선택하세요"] + tool_df["이름"].tolist())
+        
+        if selected_tool_name != "선택하세요":
+            tool_info = get_tool_details(selected_tool_name, tools_data)
+            if tool_info:
+                st.markdown(f"### {selected_tool_name} 상세 정보")
+                st.markdown(f"**카테고리**: {tool_info.get('category', '정보 없음')}")
+                st.markdown(f"**난이도**: {translate_difficulty(tool_info.get('difficulty', 'medium'))}")
+                
+                # 한국어 설명 우선, 없으면 기존 설명 사용
+                if tool_info.get("korean_description"):
+                    st.markdown(f"**설명**: {tool_info.get('korean_description')}")
+                elif tool_info.get("description"):
+                    st.markdown(f"**설명**: {tool_info.get('description')}")
+                else:
+                    st.markdown("**설명**: 상세 설명 정보가 없습니다.")
     else:
         st.info("선택한 조건에 맞는 도구가 없습니다.")
 
