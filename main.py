@@ -352,7 +352,83 @@ def add_korean_description(tools):
             tool["korean_description"] = korean_descriptions[tool.get("name")]
     
     return tools
-   
+
+def generate_expert_explanation_by_sections(tool_name, qa_system, st):
+    """
+    AI 도구 전문가의 도구 설명을 섹션별로 나누어 생성하는 함수
+    각 섹션을 개별적으로 생성하여 응답이 중간에 끊기는 문제를 방지
+    """
+    # 사용자 타입에 맞춘 프롬프트 엔지니어링
+    user_type = ""
+    if 'responses' in st.session_state:
+        job = st.session_state.responses.get('job', '')
+        ai_knowledge = st.session_state.responses.get('ai_knowledge', '')
+        
+        if job:
+            user_type += f" {job}로서"
+        
+        if ai_knowledge in ['전혀 모른다', '이름만 들어봤다']:
+            user_type += " AI 초보자를 위한"
+        elif ai_knowledge in ['AI 모델이나 알고리즘을 직접 다뤄본 적 있다']:
+            user_type += " AI 전문가를 위한"
+    
+    # 섹션 정의
+    sections = [
+        {
+            "emoji": "✨",
+            "title": f"{tool_name}이란?",
+            "prompt": f"{tool_name}의 핵심 기능과 목적을 간결하게 설명해주세요. 3-4문장으로 요약해주세요."
+        },
+        {
+            "emoji": "🚀",
+            "title": "주요 기능",
+            "prompt": f"{tool_name}의 가장 인기 있는 3-5가지 핵심 기능을 간략히 설명해주세요."
+        },
+        {
+            "emoji": "🔄",
+            "title": "유사한 대체 도구",
+            "prompt": f"{tool_name}과 비슷한 기능을 가진 다른 도구 1-2개와 간략한 비교를 해주세요."
+        }
+    ]
+    
+    # 각 섹션별로 응답 생성
+    for section in sections:
+        try:
+            # 섹션별 프롬프트 생성
+            section_prompt = f"""
+            당신은 AI 도구 전문가입니다.{user_type} 다음 질문에 한국어로 답변해주세요:
+            
+            {section["prompt"]}
+            
+            답변은 반드시 한국어로만, 간결하게 작성하세요. 불확실한 정보는 제공하지 마세요.
+            """
+            
+            # 응답 생성 (LangChain 버전에 따라 run 또는 invoke 사용)
+            try:
+                # 최신 LangChain 버전용
+                section_response = qa_system.invoke(section_prompt)
+                if isinstance(section_response, dict) and "result" in section_response:
+                    section_result = section_response["result"]
+                else:
+                    section_result = str(section_response)
+            except:
+                # 이전 LangChain 버전용
+                section_result = qa_system.run(section_prompt)
+            
+            # 응답이 너무 짧은 경우 대체 텍스트 제공
+            if len(section_result.strip()) < 20:
+                section_result = f"{tool_name}에 대한 이 정보는 현재 데이터베이스에서 충분히 찾을 수 없습니다."
+            
+            # 섹션 제목과 내용 표시
+            st.markdown(f"### {section['emoji']} {section['title']}")
+            st.markdown(section_result)
+            
+        except Exception as e:
+            st.warning(f"{section['title']} 정보 생성 중 오류 발생: {str(e)}")
+            st.markdown(f"### {section['emoji']} {section['title']}")
+            st.markdown(f"{tool_name}에 대한 이 정보는 현재 생성할 수 없습니다.")
+    
+    return "설명 생성 완료"
 
 
 #========== Streamlit UI ==========
@@ -425,7 +501,6 @@ with st.spinner("벡터 데이터베이스 구축 중..."):
         # RAG 시스템 설정
         qa = RetrievalQA.from_chain_type(
             llm=OpenAI(temperature=0.3),
-            chain_type="stuff",
             retriever=vectorstore.as_retriever(search_kwargs=search_kwargs)
         )
     except Exception as e:
@@ -519,21 +594,15 @@ if hasattr(st.session_state, 'selected_tool') and st.session_state.selected_tool
         else:
             st.markdown("**설명**: 상세 설명 정보가 없습니다.")
         
-        # PDF에서 해당 도구 검색
+         # AI 도구 전문가의 설명 생성 (섹션별로 분리)
         try:
-            st.markdown("### 📚 PDF에서 추출한 추가 정보")
-            with st.spinner(f"{tool_name}에 관한 정보 검색 중..."):
-                query = f"{tool_name}에 대한 상세 정보와 사용 방법"
-                docs = vectorstore.similarity_search(query, k=2)
-                
-                if docs:
-                    for i, doc in enumerate(docs):
-                        st.markdown(f"**출처 #{i+1} (페이지 {doc.metadata.get('page', '알 수 없음')+1})**")
-                        st.markdown(doc.page_content)
-                else:
-                    st.info(f"{tool_name}에 관한 정보를 PDF에서 찾을 수 없습니다.")
+            st.markdown("### 🤖 AI 도구 전문가의 상세 설명")
+            with st.spinner(f"{tool_name}에 관한 상세 정보 분석 중..."):
+                # 새로운 함수 호출 (섹션별 생성)
+                generate_expert_explanation_by_sections(tool_name, qa, st)
+        
         except Exception as e:
-            st.error(f"도구 상세 정보 검색 중 오류 발생: {e}")
+            st.error(f"전문가 설명 생성 중 오류 발생: {e}")
     else:
         st.error(f"{tool_name}에 대한 정보를 찾을 수 없습니다.")
     
@@ -615,11 +684,21 @@ if tools_data:
                 
                 # 한국어 설명 우선, 없으면 기존 설명 사용
                 if tool_info.get("korean_description"):
-                    st.markdown(f"**설명**: {tool_info.get('korean_description')}")
+                    st.markdown(f"**기본 설명**: {tool_info.get('korean_description')}")
                 elif tool_info.get("description"):
-                    st.markdown(f"**설명**: {tool_info.get('description')}")
+                    st.markdown(f"**기본 설명**: {tool_info.get('description')}")
                 else:
-                    st.markdown("**설명**: 상세 설명 정보가 없습니다.")
+                    st.markdown("**기본 설명**: 상세 설명 정보가 없습니다.")
+                
+                # AI 도구 전문가의 설명 생성 (섹션별로 분리)
+                try:
+                    st.markdown("### 🤖 AI 도구 전문가의 상세 설명")
+                    with st.spinner(f"{selected_tool_name}에 관한 상세 정보 분석 중..."):
+                        # 새로운 함수 호출 (섹션별 생성)
+                        generate_expert_explanation_by_sections(selected_tool_name, qa, st)
+                
+                except Exception as e:
+                    st.error(f"전문가 설명 생성 중 오류 발생: {e}")
     else:
         st.info("선택한 조건에 맞는 도구가 없습니다.")
 
@@ -662,7 +741,12 @@ if user_question:
             # 질문에 대한 컨텍스트 정보
             context_prompt = f"""
             당신은 AI 도구 추천 전문가입니다. 사용자의 질문에 정확하고 친절하게 답변해주세요.
-            답변은 반드시 한국어로 제공해야 합니다.
+            답변은 반드시 한국어로 제공해야 합니다. 사용자의 수준과 직업을 고려하여 적절한 깊이로 설명해주세요.
+            
+            가능하다면 다음 형식으로 답변해주세요:
+            1. 직접적인 질문 답변
+            2. 추가 상세 정보나 팁
+            3. 관련 도구나 활용법 추천
             질문: {clean_question}
             """
             
@@ -711,4 +795,6 @@ if st.session_state.qa_history:
             st.caption(f"응답 시간: {qa_item['response_time']:.2f}초 | 시간: {qa_item['timestamp']}")
             st.markdown("---")
 
+
+st.markdown("---")
 st.button("🔄 설문 다시 하기", on_click=reset_survey)
