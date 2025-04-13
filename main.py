@@ -151,7 +151,6 @@ def visualize_category_distribution(tools_data):
                 ha='center', va='bottom', fontsize=9)
     
     plt.xticks(rotation=45, ha='right')
-    plt.title('AI 도구 카테고리 분포 (상위 10개)')
     plt.tight_layout()
     return fig
 
@@ -318,7 +317,7 @@ def add_korean_description(tools):
     return tools
 
 #========== Streamlit UI ==========
-st.title("에이아이다움")
+st.title("🛸 에이아이다움")
 st.write("설문조사를 완료하시면, 당신에게 맞는 AI 도구를 추천해드립니다.")
 
 #========== 설문 화면 ==========
@@ -384,8 +383,8 @@ with st.spinner("추천 생성 중입니다..."):
 
 # 추천 결과 표시
 if recommended_tools:
-    st.success(f"✅ 설문 응답에 기반한 맞춤형 AI 도구 추천이 완료되었습니다.")
-    st.markdown(f"**{user_type}** 유형인 당신을 위한 맞춤형 AI 도구입니다. 이 도구들은 당신의 관심사, 목적, 직업을 고려하여 특별히 선정되었습니다.")
+    st.success(f"✅ 맞춤형 AI 도구 추천 완료!")
+    st.markdown(f"**{user_type}** 유형인 당신을 위한 맞춤형 AI 도구입니다. 이 도구들은 설문 응답에 기반하여 당신의 관심사, 목적, 직업을 고려하여 특별히 선정되었습니다.")
 
 
     
@@ -455,12 +454,10 @@ if hasattr(st.session_state, 'selected_tool') and st.session_state.selected_tool
         del st.session_state.selected_tool
         st.rerun()
 
-st.markdown("---")
-
 #========== 점수표 ==========
 if recommended_tools:
     with st.expander("🤖 맞춤형 도구 선정 근거(점수표)", expanded=False):
-        st.markdown("#### 추천 점수 분포")
+        st.markdown("#### 설문 바탕 점수 분포")
         score_fig, ax = plt.subplots(figsize=(8, 4))
         tool_names = [tool.get('name') for tool in recommended_tools]
         scores = [tool.get('score', 0) for tool in recommended_tools]
