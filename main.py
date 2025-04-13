@@ -245,7 +245,7 @@ def recommend_tools_by_criteria(tools_data, user_responses, max_recommendations=
         "업무 자동화": ["Project Management", "Scheduling", "Email"],
         "검색 및 지식 관리": ["Search Engines", "Knowledge Management"],
         "코드 생성 및 개발 지원": ["App Builders & Coding"],
-        "번역 및 언어 학습": ["Grammar and Writing Improvement"],
+        "번역 및 언어 학습": ["Grammar and Writing Improvement","AI Assistants (Chatbots)"],
         "기타": []
     }
     
@@ -258,7 +258,7 @@ def recommend_tools_by_criteria(tools_data, user_responses, max_recommendations=
     # 4. 특정 목적 기반 점수화
     purposes = user_responses.get('specific_purpose', [])
     purpose_category_map = {
-        "문서 작성 및 편집": ["Writing", "Grammar and Writing Improvement"],
+        "문서 작성 및 편집": ["Writing", "Grammar and Writing Improvement","AI Assistants (Chatbots)"],
         "이미지/영상 제작": ["Image Generation", "Video Generation and Editing","Graphic Design"],
         "데이터 분석": ["Research"],
         "프로그래밍 및 개발": ["App Builders & Coding"],
@@ -267,7 +267,7 @@ def recommend_tools_by_criteria(tools_data, user_responses, max_recommendations=
         "교육 및 학습": ["Knowledge Management","Search Engines"],
         "업무 자동화": ["Project Management", "Scheduling", "Email"],
         "고객 서비스": ["Customer Service"],
-        "연구 및 논문 작성": ["Research", "Writing","Search Engines"],
+        "연구 및 논문 작성": ["Research", "Writing","Search Engines","AI Assistants (Chatbots)"],
         "기타": []
     }
     
@@ -641,7 +641,7 @@ if feedback_tool:
 #========== PDF 기반 AI 도구 질의응답 ==========
 st.markdown("---")
 st.markdown("### 🤖 AI 도구에 대해 질문하기")
-st.write("PDF 문서에서 학습한 지식을 기반으로 AI 도구에 관한 질문에 답변해 드립니다.")
+st.write("AI 도구 전문가가 답변해 드립니다.")
 
 # 세션 상태에 질문-답변 저장
 if 'qa_history' not in st.session_state:
