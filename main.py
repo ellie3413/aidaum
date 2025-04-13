@@ -393,40 +393,40 @@ def generate_expert_explanation_by_sections(tool_name, qa_system, st):
     
     # 각 섹션별로 응답 생성
     for section in sections:
-        try:
-            # 섹션별 프롬프트 생성
-            section_prompt = f"""
-            당신은 AI 도구 전문가입니다.{user_type} 다음 질문에 한국어로 답변해주세요:
-            
-            {section["prompt"]}
-            
-            답변은 반드시 한국어로만, 간결하게 작성하세요. 불확실한 정보는 제공하지 마세요.
-            """
-            
-            # 응답 생성 (LangChain 버전에 따라 run 또는 invoke 사용)
+        st.markdown(f"### {section['emoji']} {section['title']}")
+        with st.spinner(f"{section['title']} 정보를 생성 중..."):
             try:
-                # 최신 LangChain 버전용
-                section_response = qa_system.invoke(section_prompt)
-                if isinstance(section_response, dict) and "result" in section_response:
-                    section_result = section_response["result"]
-                else:
-                    section_result = str(section_response)
-            except:
-                # 이전 LangChain 버전용
-                section_result = qa_system.run(section_prompt)
-            
-            # 응답이 너무 짧은 경우 대체 텍스트 제공
-            if len(section_result.strip()) < 20:
-                section_result = f"{tool_name}에 대한 이 정보는 현재 데이터베이스에서 충분히 찾을 수 없습니다."
-            
-            # 섹션 제목과 내용 표시
-            st.markdown(f"### {section['emoji']} {section['title']}")
-            st.markdown(section_result)
-            
-        except Exception as e:
-            st.warning(f"{section['title']} 정보 생성 중 오류 발생: {str(e)}")
-            st.markdown(f"### {section['emoji']} {section['title']}")
-            st.markdown(f"{tool_name}에 대한 이 정보는 현재 생성할 수 없습니다.")
+                # 섹션별 프롬프트 생성
+                section_prompt = f"""
+                당신은 AI 도구 전문가입니다.{user_type} 다음 질문에 한국어로 답변해주세요:
+                
+                {section["prompt"]}
+                
+                답변은 반드시 한국어로만, 간결하게 작성하세요. 불확실한 정보는 제공하지 마세요.
+                """
+                
+                # 응답 생성 (LangChain 버전에 따라 run 또는 invoke 사용)
+                try:
+                    # 최신 LangChain 버전용
+                    section_response = qa_system.invoke(section_prompt)
+                    if isinstance(section_response, dict) and "result" in section_response:
+                        section_result = section_response["result"]
+                    else:
+                        section_result = str(section_response)
+                except:
+                    # 이전 LangChain 버전용
+                    section_result = qa_system.run(section_prompt)
+                
+                # 응답이 너무 짧은 경우 대체 텍스트 제공
+                if len(section_result.strip()) < 20:
+                    section_result = f"{tool_name}에 대한 이 정보는 현재 데이터베이스에서 충분히 찾을 수 없습니다."
+                
+                # 섹션 내용 표시
+                st.markdown(section_result)
+                
+            except Exception as e:
+                st.warning(f"{section['title']} 정보 생성 중 오류 발생: {str(e)}")
+                st.markdown(f"{tool_name}에 대한 이 정보는 현재 생성할 수 없습니다.")
     
     return "설명 생성 완료"
 
