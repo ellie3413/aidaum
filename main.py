@@ -183,6 +183,7 @@ def recommend_tools_by_criteria(tools_data, user_responses, max_recommendations=
             elif tool.get('difficulty') is None and preferred_difficulty == "medium":
                 tool['score'] += 4
     
+    # 2. AI
     # 2. AI 지식 수준에 따른 난이도 조정
     knowledge_level = user_responses.get('ai_knowledge', '')
     if knowledge_level in ['전혀 모른다', '이름만 들어봤다']:
@@ -236,6 +237,28 @@ def recommend_tools_by_criteria(tools_data, user_responses, max_recommendations=
         for tool in tools_data:
             if tool.get('category') in matching_categories:
                 tool['score'] += 4
+    
+    # 5. 직업 기반 점수화 (추가됨)
+    job = user_responses.get('job', '')
+    job_category_map = {
+        "학생": ["Writing", "Research", "Grammar and Writing Improvement", "Knowledge Management"],
+        "개발자/IT 종사자": ["App Builders & Coding", "AI Assistants (Chatbots)"],
+        "교육자/연구원": ["Research", "Knowledge Management", "Presentations", "Writing"],
+        "디자이너/창작자": ["Image Generation", "Video Generation and Editing", "Graphic Design", "Music Generation"],
+        "마케터/홍보": ["Social Media Management", "Marketing", "Writing", "Image Generation"],
+        "사무직": ["Email", "Project Management", "Scheduling", "Writing"],
+        "경영/관리자": ["Project Management", "Knowledge Management", "Presentations"],
+        "창업가/프리랜서": ["Marketing", "Social Media Management", "Email", "Customer Service"],
+        "의료/건강 종사자": ["Research", "Knowledge Management"],
+        "법률/금융 전문가": ["Research", "Grammar and Writing Improvement", "Writing"],
+        "기타": []
+    }
+    
+    if job:
+        matching_categories = job_category_map.get(job, [])
+        for tool in tools_data:
+            if tool.get('category') in matching_categories:
+                tool['score'] += 5  # 직업 관련성이 높은 도구에 더 높은 가중치 부여
     
     # 도구 설명이 있는 도구에 가중치 부여
     for tool in tools_data:
@@ -348,24 +371,12 @@ if not st.session_state.get("survey_complete", False):
 responses = st.session_state.responses
 
 #========== tools.txt 및 JSON 데이터 로드 ==========
-with st.expander("📦 데이터 로드 상태", expanded=False):
-    st.markdown("### 📖 데이터 로드 중...")
-    
-    # tools.txt 로드
-    try:
-        loader = TextLoader("tools.txt", encoding="utf-8") 
-        pages = loader.load_and_split()
-        st.success("✅ tools.txt 로드 완료")
-    except FileNotFoundError:
-        st.error("❌ tools.txt 파일이 현재 폴더에 없습니다. 확인 후 다시 실행해주세요.")
-        st.stop()
-    
-    # JSON 데이터 로드
-    tools_data = load_json_data()
-    if tools_data:
-        st.success(f"✅ JSON 데이터 로드 완료 ({len(tools_data)}개 도구 정보)")
-    else:
-        st.warning("⚠️ JSON 데이터를 로드할 수 없습니다. 기본 추천만 제공됩니다.")
+
+loader = TextLoader("tools.txt", encoding="utf-8") 
+pages = loader.load_and_split()
+
+# JSON 데이터 로드
+tools_data = load_json_data()
 
 #========== 사용자 선호도에 맞는 검색 매개변수 결정 ==========
 search_kwargs = {"k": 5}  # 기본값
