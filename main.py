@@ -420,7 +420,7 @@ with st.spinner("벡터 데이터베이스 구축 중..."):
         
         # 벡터 스토어 생성
         vectorstore = FAISS.from_documents(split_docs, embeddings)
-        st.success("✅ 벡터 데이터베이스 구축 완료")
+        #st.success("✅ 벡터 데이터베이스 구축 완료")
         
         # RAG 시스템 설정
         qa = RetrievalQA.from_chain_type(
@@ -588,9 +588,9 @@ if tools_data:
     filtered_tools = filter_tools_by_search(filtered_tools, search_term)
     
     # 카테고리별 도구 분포 시각화
-    st.markdown("### 📊 AI 도구 카테고리 분포")
-    fig = visualize_category_distribution(tools_data)
-    st.pyplot(fig)
+    with st.expander("📊 AI 도구 카테고리 분포 그래프로 보기", expanded=False):
+        fig = visualize_category_distribution(tools_data)
+        st.pyplot(fig)
     
     # 필터링된 도구 리스트
     st.markdown("### 📋 필터링된 도구 목록")
