@@ -106,33 +106,7 @@ def run_survey():
                     st.rerun()
 
     else:
-        st.success("🎉 설문이 완료되었습니다! 당신에게 맞는 AI 도구를 추천해 드립니다.")
-        st.session_state.survey_complete = True
-        
-        # 응답 결과 요약 시각화
-        st.markdown("#### 📊 당신의 응답 결과 요약")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # AI 지식 수준
-            st.markdown(f"**AI 지식 수준**: {st.session_state.responses.get('ai_knowledge', '-')}")
-            
-            # 직업 정보
-            st.markdown(f"**직업/분야**: {st.session_state.responses.get('job', '-')}")
-            
-            # 선호 난이도
-            st.markdown(f"**선호 난이도**: {st.session_state.responses.get('preferred_difficulty', '-')}")
-        
-        with col2:
-            # 관심 도구 종류
-            interests = st.session_state.responses.get('tool_interest', [])
-            if interests:
-                st.markdown(f"**관심 도구 종류**: {', '.join(interests)}")
-            
-            # 구체적 목적
-            purposes = st.session_state.responses.get('specific_purpose', [])
-            if purposes:
-                st.markdown(f"**활용 목적**: {', '.join(purposes)}")
+        st.success("🎉 설문이 완료되었습니다!")
+        st.session_state.survey_complete = True    
         
         st.markdown("---")

@@ -15,6 +15,8 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAI
 from langchain_community.document_loaders import TextLoader  
 from langchain.chains.question_answering import load_qa_chain
+from user_type import determine_user_type, get_user_type_description
+
 
 #========== 환경 변수 로딩 ==========
 load_dotenv()
@@ -286,48 +288,6 @@ def recommend_tools_by_criteria(tools_data, user_responses, max_recommendations=
     
     return recommended
 
-def create_radar_chart(tools_data, recommended_tools):
-    """추천된 도구들의 카테고리 레이더 차트 생성"""
-    # 카테고리 추출
-    all_categories = set()
-    for tool in tools_data:
-        if tool.get("category"):
-            all_categories.add(tool.get("category"))
-    
-    categories = list(all_categories)[:8]  # 상위 8개 카테고리만 사용
-    
-    # 추천 도구들의 카테고리 카운팅
-    category_counts = {category: 0 for category in categories}
-    tool_categories = {}
-    
-    for tool in recommended_tools:
-        if tool.get("category") in categories:
-            category_counts[tool.get("category")] += 1
-            tool_categories[tool.get("name")] = tool.get("category")
-    
-    # 레이더 차트 데이터 준비
-    values = [category_counts.get(category, 0) for category in categories]
-    values.append(values[0])  # 레이더 차트를 닫기 위해 첫 값 반복
-    categories.append(categories[0])  # 축 레이블도 마찬가지로 반복
-    
-    # 레이더 차트 생성
-    angles = [n / float(len(categories)-1) * 2 * 3.14159 for n in range(len(categories))]
-    
-    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
-    ax.plot(angles, values, linewidth=2, linestyle='solid')
-    ax.fill(angles, values, 'skyblue', alpha=0.4)
-    
-    # 축 레이블 설정
-    plt.xticks(angles[:-1], categories[:-1])
-    
-    # 값 표시
-    for i, (angle, value) in enumerate(zip(angles[:-1], values[:-1])):
-        if value > 0:
-            ax.text(angle, value + 0.1, str(value), ha='center', va='center')
-    
-    plt.title('추천된 도구들의 카테고리 분포')
-    return fig, tool_categories
-
 def translate_difficulty(difficulty):
     """난이도 영어 표현을 한국어로 변환"""
     if difficulty == "low":
@@ -358,7 +318,7 @@ def add_korean_description(tools):
     return tools
 
 #========== Streamlit UI ==========
-st.title("🎯 AI 리터러시 기반 AI 도구 추천")
+st.title("에이아이다움")
 st.write("설문조사를 완료하시면, 당신에게 맞는 AI 도구를 추천해드립니다.")
 
 #========== 설문 화면 ==========
@@ -387,8 +347,33 @@ if responses.get('ai_knowledge') in ['전혀 모른다', '이름만 들어봤다
 elif responses.get('ai_knowledge') in ['AI 모델이나 알고리즘을 직접 다뤄본 적 있다']:
     search_kwargs["k"] = 7  # 전문가는 더 깊은 검색
 
+#========== AI 유형 추천 ==========
+
+st.markdown("### 🧩 당신의 AI 유형은?")
+
+# 사용자 유형 결정
+user_type = determine_user_type(responses)
+user_type_info = get_user_type_description(user_type)
+
+# 유형 정보 표시
+st.markdown(f"## {user_type_info['title']}")
+st.markdown(user_type_info['description'])
+
+# 유형 세부 정보
+col1, col2 = st.columns(2)
+with col1:
+    st.markdown("#### 💪 강점")
+    st.markdown(user_type_info['strengths'])
+    
+with col2:
+    st.markdown("#### 🚀 추천 접근법")
+    st.markdown(user_type_info['recommended_approach'])
+
+st.markdown("---")
+
+
 #========== 알고리즘 기반 도구 추천 ==========
-st.markdown("### 🧠 맞춤형 AI 도구 추천 결과")
+st.markdown("### 🔎 당신을 위한 AI 도구 추천")
 
 # 한국어 설명 추가
 tools_data = add_korean_description(tools_data)
@@ -400,6 +385,9 @@ with st.spinner("추천 생성 중입니다..."):
 # 추천 결과 표시
 if recommended_tools:
     st.success(f"✅ 설문 응답에 기반한 맞춤형 AI 도구 추천이 완료되었습니다.")
+    st.markdown(f"**{user_type}** 유형인 당신을 위한 맞춤형 AI 도구입니다. 이 도구들은 당신의 관심사, 목적, 직업을 고려하여 특별히 선정되었습니다.")
+
+
     
     # 3개의 열로 추천 도구 표시
     cols = st.columns(len(recommended_tools))
@@ -467,31 +455,26 @@ if hasattr(st.session_state, 'selected_tool') and st.session_state.selected_tool
         del st.session_state.selected_tool
         st.rerun()
 
-#========== 시각화 및 분석 ==========
 st.markdown("---")
-st.markdown("### 📊 추천 도구 분석")
 
+#========== 점수표 ==========
 if recommended_tools:
-    # 레이더 차트: 추천 도구 카테고리 분석
-    radar_fig, tool_categories = create_radar_chart(tools_data, recommended_tools)
-    st.pyplot(radar_fig)
-    
-    # 도구 추천 점수 시각화
-    st.markdown("#### 추천 점수 분포")
-    score_fig, ax = plt.subplots(figsize=(8, 4))
-    tool_names = [tool.get('name') for tool in recommended_tools]
-    scores = [tool.get('score', 0) for tool in recommended_tools]
-    
-    bars = ax.barh(tool_names, scores, color=['#2E86C1', '#3498DB', '#85C1E9'])
-    
-    # 값 표시
-    for i, (score, bar) in enumerate(zip(scores, bars)):
-        ax.text(score + 0.5, i, f"{score}", ha='left', va='center')
-    
-    plt.xlabel('추천 점수')
-    plt.title('AI 도구 추천 점수')
-    plt.tight_layout()
-    st.pyplot(score_fig)
+    with st.expander("🤖 맞춤형 도구 선정 근거(점수표)", expanded=False):
+        st.markdown("#### 추천 점수 분포")
+        score_fig, ax = plt.subplots(figsize=(8, 4))
+        tool_names = [tool.get('name') for tool in recommended_tools]
+        scores = [tool.get('score', 0) for tool in recommended_tools]
+        
+        bars = ax.barh(tool_names, scores, color=['#2E86C1', '#3498DB', '#85C1E9'])
+
+        # 값 표시
+        for i, (score, bar) in enumerate(zip(scores, bars)):
+            ax.text(score + 0.5, i, f"{score}", ha='left', va='center')
+        
+        plt.xlabel('your score')
+        plt.tight_layout()
+        st.pyplot(score_fig)
+
 
 #========== 난이도 필터 및 세부 정보 ==========
 st.markdown("---")
