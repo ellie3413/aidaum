@@ -259,14 +259,15 @@ def recommend_tools_by_criteria(tools_data, user_responses, max_recommendations=
     purposes = user_responses.get('specific_purpose', [])
     purpose_category_map = {
         "문서 작성 및 편집": ["Writing", "Grammar and Writing Improvement"],
-        "이미지/영상 제작": ["Image Generation", "Video Generation and Editing"],
+        "이미지/영상 제작": ["Image Generation", "Video Generation and Editing","Graphic Design"],
         "데이터 분석": ["Research"],
         "프로그래밍 및 개발": ["App Builders & Coding"],
+        "영문이력서 작성": ["Resume Builders", "Writing", "AI Assistants (Chatbots)"],
         "마케팅 및 홍보": ["Marketing", "Social Media Management"],
-        "교육 및 학습": ["Knowledge Management"],
+        "교육 및 학습": ["Knowledge Management","Search Engines"],
         "업무 자동화": ["Project Management", "Scheduling", "Email"],
         "고객 서비스": ["Customer Service"],
-        "연구 및 논문 작성": ["Research", "Writing"],
+        "연구 및 논문 작성": ["Research", "Writing","Search Engines"],
         "기타": []
     }
     
@@ -344,7 +345,6 @@ def add_korean_description(tools):
         "Perplexity": "다양한 정보 소스를 활용해 깊이 있는 검색과 답변을 제공하는 AI 검색 엔진입니다.",
         "Grammarly": "텍스트 작성 시 문법, 맞춤법, 문체를 자동으로 교정해주는 AI 글쓰기 도우미입니다.",
         "Canva Magic Studio": "손쉬운 디자인 제작을 위한 AI 기능이 강화된 그래픽 디자인 플랫폼입니다.",
-        "Cursor": "AI 기반 코드 작성과 편집을 도와주는 개발자 도구로, 코딩 생산성을 크게 향상시킵니다."
     }
     
     for tool in tools:
@@ -352,99 +352,8 @@ def add_korean_description(tools):
             tool["korean_description"] = korean_descriptions[tool.get("name")]
     
     return tools
+   
 
-#========== 평가 지표 관련 함수 ==========
-def save_rag_evaluation(question, answer, user_rating, user_feedback=None, response_time=None):
-    """RAG 시스템의 답변 평가 정보 저장"""
-    evaluation_data = {
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "question": question,
-        "answer": answer,
-        "user_rating": user_rating,
-        "user_feedback": user_feedback,
-        "response_time": response_time,
-        "user_profile": st.session_state.responses if hasattr(st.session_state, 'responses') else {}
-    }
-    
-    # 평가 데이터 저장
-    try:
-        if os.path.exists("rag_evaluations.json"):
-            try:
-                with open("rag_evaluations.json", "r", encoding="utf-8") as f:
-                    existing_data = json.load(f)
-            except UnicodeDecodeError:
-                with open("rag_evaluations.json", "r", encoding="latin-1") as f:
-                    existing_data = json.load(f)
-                    
-            existing_data.append(evaluation_data)
-            with open("rag_evaluations.json", "w", encoding="utf-8", errors="ignore") as f:
-                json.dump(existing_data, f, ensure_ascii=True, indent=2)
-        else:
-            with open("rag_evaluations.json", "w", encoding="utf-8", errors="ignore") as f:
-                json.dump([evaluation_data], f, ensure_ascii=True, indent=2)
-        return True
-    except Exception as e:
-        st.error(f"평가 데이터 저장 중 오류 발생: {e}")
-        return False
-
-def load_rag_evaluations():
-    """저장된 RAG 평가 데이터 로드"""
-    try:
-        if os.path.exists("rag_evaluations.json"):
-            try:
-                with open("rag_evaluations.json", "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except UnicodeDecodeError:
-                # 인코딩 오류 시 latin-1으로 시도
-                with open("rag_evaluations.json", "r", encoding="latin-1") as f:
-                    return json.load(f)
-        return []
-    except Exception as e:
-        st.error(f"평가 데이터 로드 중 오류 발생: {e}")
-        return []
-
-def calculate_average_rating():
-    """평균 사용자 평가 점수 계산"""
-    evaluations = load_rag_evaluations()
-    if not evaluations:
-        return 0
-    
-    total_rating = sum(eval.get("user_rating", 0) for eval in evaluations)
-    return total_rating / len(evaluations)
-
-def calculate_average_response_time():
-    """평균 응답 시간 계산 (초 단위)"""
-    evaluations = load_rag_evaluations()
-    times = [eval.get("response_time") for eval in evaluations if eval.get("response_time")]
-    
-    if not times:
-        return 0
-    
-    return sum(times) / len(times)
-
-def visualize_ratings():
-    """평가 점수 분포 시각화"""
-    evaluations = load_rag_evaluations()
-    
-    if not evaluations:
-        return None
-    
-    ratings = [eval.get("user_rating", 0) for eval in evaluations]
-    rating_counts = {}
-    
-    for rating in range(1, 6):
-        rating_counts[rating] = ratings.count(rating)
-    
-    fig, ax = plt.subplots(figsize=(8, 4))
-    bars = ax.bar(rating_counts.keys(), rating_counts.values(), color=['#FF9999', '#FFCC99', '#FFFF99', '#CCFF99', '#99FF99'])
-    
-    plt.xlabel('평가 점수')
-    plt.ylabel('응답 수')
-    plt.title('사용자 만족도 분포')
-    plt.xticks([1, 2, 3, 4, 5])
-    plt.tight_layout()
-    
-    return fig
 
 #========== Streamlit UI ==========
 st.title("🛸 에이아이다움")
@@ -856,7 +765,7 @@ if st.session_state.qa_history:
             st.markdown("---")
 
 #========== RAG 평가 지표 대시보드 ==========
-st.markdown("---")
+"""st.markdown("---")
 st.markdown("### 📈 RAG 시스템 성능 지표")
 
 # 평가 데이터 로드
@@ -899,6 +808,6 @@ if evaluations:
     else:
         st.info("아직 텍스트 피드백이 없습니다.")
 else:
-    st.info("아직 평가 데이터가 없습니다. 질문을 통해 시스템을 평가해보세요.")
+    st.info("아직 평가 데이터가 없습니다. 질문을 통해 시스템을 평가해보세요.")"""
 
 st.button("🔄 설문 다시 하기", on_click=reset_survey)
