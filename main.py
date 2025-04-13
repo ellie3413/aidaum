@@ -318,7 +318,7 @@ def add_korean_description(tools):
 
 #========== Streamlit UI ==========
 st.title("🛸 에이아이다움")
-st.write("설문조사를 완료하시면, 당신에게 맞는 AI 도구를 추천해드립니다.")
+st.write("설문조사를 완료하시면, 당신의 AI 유형과 필요한 AI 도구를 추천해드립니다.")
 
 #========== 설문 화면 ==========
 run_survey()
