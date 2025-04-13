@@ -22,7 +22,7 @@ def reset_survey():
     st.session_state.survey_complete = False
     st.rerun()
 
-#========== 질문 목록 ==========
+#========== 질문 목록 - 핵심 질문과 직업 포함 ==========
 questions = [
     {
         "question": "현재 AI에 대해 얼마나 알고 계신가요?",
@@ -64,47 +64,50 @@ def run_survey():
     total_q = len(questions)
     curr_page = st.session_state.page
 
-    st.markdown("### 🤖 AI 리터러시 진단 설문")
-    st.progress(curr_page / total_q)
+    # 진행 상태 표시
+    if curr_page < total_q:
+        st.progress((curr_page) / total_q)
+        st.markdown(f"### 질문 {curr_page + 1}/{total_q}")
 
     if curr_page < total_q:
         q = questions[curr_page]
-        st.markdown(f"#### Q{curr_page + 1}. {q['question']}")
+        st.markdown(f"#### {q['question']}")
+        
+        # 도움말 표시
+        if "help" in q:
+            st.caption(q["help"])
+        
         st.markdown("---")
 
         if q.get("multi"):
-            response = st.multiselect("✅ 선택하세요", q["options"], key=f"resp_{q['key']}")
+            # 기본값 설정 (이전에 응답했던 값이 있으면 유지)
+            default_val = st.session_state.responses.get(q["key"], []) if q["key"] in st.session_state.responses else []
+            response = st.multiselect("✅ 선택하세요", q["options"], default=default_val, key=f"resp_{q['key']}")
         else:
-            response = st.radio("✅ 선택하세요", q["options"], key=f"resp_{q['key']}")
+            # 기본값 설정
+            default_idx = 0
+            if q["key"] in st.session_state.responses:
+                if st.session_state.responses[q["key"]] in q["options"]:
+                    default_idx = q["options"].index(st.session_state.responses[q["key"]])
+            
+            response = st.radio("✅ 선택하세요", q["options"], index=default_idx, key=f"resp_{q['key']}")
 
-        col1, col2 = st.columns([1, 3])
-        with col1:
+        col1, col2, col3 = st.columns([1, 1, 3])
+
+        # 이전 버튼 (첫 번째 질문이 아닌 경우에만)
+        if curr_page > 0:
+            with col1:
+                if st.button("👈 이전", use_container_width=True):
+                    st.session_state.page -= 1
+                    st.rerun()
+
+        with col2:
             if st.button("👉 다음", use_container_width=True):
                 st.session_state.responses[q["key"]] = response
                 next_page()
-        
-        # 설문 진행 상태 표시
-        st.caption(f"{curr_page + 1} / {total_q} 질문")
+
 
     else:
-        st.success("🎉 설문이 완료되었습니다! 감사합니다.")
+        st.success("🎉 설문이 완료되었습니다! 당신에게 맞는 AI 도구를 추천해 드립니다.")
         st.session_state.survey_complete = True
         
-        # 응답 결과 요약 시각화
-        st.markdown("#### 📊 당신의 응답 결과 요약")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.info(f"💡 **AI 지식 수준**: {st.session_state.responses.get('ai_knowledge', '-')}")
-            st.info(f"💡 **주 사용 목적**: {st.session_state.responses.get('purpose', '-')}")
-            
-        with col2:
-            st.info(f"💡 **직업/활동**: {st.session_state.responses.get('job', '-')}")
-            st.info(f"💡 **AI 도구 사용 빈도**: {st.session_state.responses.get('ai_tool_usage', '-')}")
-        
-        # 선택적으로 전체 상세 결과 보기
-        with st.expander("전체 응답 상세 결과", expanded=False):
-            st.json(st.session_state.responses)
-        
-        st.markdown("---")
-        st.button("🔄 처음부터 다시 하기", on_click=reset_survey)
